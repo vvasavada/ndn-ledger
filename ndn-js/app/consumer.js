@@ -42,7 +42,7 @@ var face = new Face(new UnixTransport());
 var notify = function() {
   name = new Name(common.multicast_pref);
   name.append(common.local_pref);
-  name.append(common.type_notify);
+  name.append(common.type_notif);
   name.append("1");
   console.log("Interest " + name.toUri());
   console.log("Notifying transaction: 1");
