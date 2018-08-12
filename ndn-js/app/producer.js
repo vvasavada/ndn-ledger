@@ -136,7 +136,7 @@ Echo.prototype.onInterest = function(prefix, interest, face, interestFilterId, f
 {
   // Make and sign a Data packet.
   var data = new Data(interest.getName());
-  var content = "Echo " + interest.getName().toUri();
+  var content = "ACK " + interest.getName().toUri();
   data.setContent(content);
 	this.keyChain.sign(data);
 

@@ -22,11 +22,13 @@ var Face = require('..').Face;
 var Name = require('..').Name;
 var UnixTransport = require('..').UnixTransport;
 
+var common = require('..').Common
+
 var onData = function(interest, data) {
   console.log("Got data packet with name " + data.getName().toUri());
   console.log(data.getContent().buf().toString('binary'));
 
-  //face.close();  // This will cause the script to quit.
+  face.close();  // This will cause the script to quit.
 };
 
 var onTimeout = function(interest) {
@@ -37,16 +39,15 @@ var onTimeout = function(interest) {
 // Connect to the local forwarder with a Unix socket.
 var face = new Face(new UnixTransport());
 
-var rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout
-});
-
-rl.question("Enter a word to echo: ", function(word) {
-  var name = new Name("/testecho");
-  name.append(word);
-  console.log("Express name " + name.toUri());
+var notify = function() {
+  name = new Name(common.multicast_pref);
+  name.append(common.local_pref);
+  name.append(common.type_notify);
+  name.append("1");
+  console.log("Interest " + name.toUri());
+  console.log("Notifying transaction: 1");
   face.expressInterest(name, onData, onTimeout);
+}
 
-  rl.close();
-});
+
+notify();
