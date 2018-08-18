@@ -49,5 +49,17 @@ var notify = function() {
   face.expressInterest(name, onData, onTimeout);
 }
 
+var get = function(notifier_pref, hash) {
+  name = new Name(notifier_pref);
+  name.append(hash)
+  console.log("Interest " + name.toUri());
+  console.log("Get Bundle: " + hash);
+  face.expressInterest(name, onData, onTimeout);
+}
 
-notify();
+var arg = process.argv[2]
+if (arg == "NOTIF"){
+  notify();
+} else if (arg == "GET_BUNDLE") {
+  get(process.argv[3], process.argv[4]);
+}

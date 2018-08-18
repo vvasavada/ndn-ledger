@@ -24,6 +24,8 @@ var UnixTransport = require('..').UnixTransport;
 var SafeBag = require('..').SafeBag;
 var KeyChain = require('..').KeyChain;
 
+var common = require('..').Common;
+
 var DEFAULT_RSA_PUBLIC_KEY_DER = new Buffer([
     0x30, 0x82, 0x01, 0x22, 0x30, 0x0d, 0x06, 0x09, 0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 0x01, 0x01,
     0x01, 0x05, 0x00, 0x03, 0x82, 0x01, 0x0f, 0x00, 0x30, 0x82, 0x01, 0x0a, 0x02, 0x82, 0x01, 0x01,
@@ -134,9 +136,27 @@ var Echo = function Echo(keyChain, face) {
 
 Echo.prototype.onInterest = function(prefix, interest, face, interestFilterId, filter)
 {
-  // Make and sign a Data packet.
-  var data = new Data(interest.getName());
-  var content = "ACK " + interest.getName().toUri();
+  console.log("ON INTEREST");
+  name = interest.getName();
+  var data = new Data(name);
+  if(name.toUri().startsWith(common.multicast_pref)){
+    var res = name.toUri().split("/");
+    if (res[3] == common.type_notif){
+      var content = common.type_notif_reply + ";" + name.toUri();
+      var exec = require('child_process').exec, child;
+      child = exec("node consumer.js GET_BUNDLE " + res[2] + " " + res[4], 
+              function (error, stdout, stderr) {
+                console.log('stdout: ' + stdout);
+                console.log('stderr: ' + stderr);
+                if (error !== null) {
+                  console.log('exec error: ' + error);
+                }
+              });
+    } // else if it is JOIN request (not included in common for now)
+  } else if (name.toUri().startsWith(common.local_pref)){
+    var content = common.type_get_bundle_reply + ";" + name.toUri();
+  }
+
   data.setContent(content);
 	this.keyChain.sign(data);
 
@@ -146,7 +166,7 @@ Echo.prototype.onInterest = function(prefix, interest, face, interestFilterId, f
   } catch (e) {
     console.log(e.toString());
   }
-  this.face.close();  // This will cause the script to quit.
+  //this.face.close();  // This will cause the script to quit.
 };
 
 Echo.prototype.onRegisterFailed = function(prefix)
@@ -173,10 +193,14 @@ function main()
   face.setCommandSigningInfo(keyChain, keyChain.getDefaultCertificateName());
 
   var echo = new Echo(keyChain, face);
-  var prefix = new Name("/testecho");
-  console.log("Register prefix " + prefix.toUri());
+  var multicast_pref = new Name("/iota");
+  var local_pref = new Name(common.local_pref);
+  console.log("Register multicast prefix " + multicast_pref.toUri());
+  console.log("Register local prefix " + local_pref.toUri());
   face.registerPrefix
-    (prefix, echo.onInterest.bind(echo), echo.onRegisterFailed.bind(echo));
+    (multicast_pref, echo.onInterest.bind(echo), echo.onRegisterFailed.bind(echo));
+  face.registerPrefix
+    (local_pref, echo.onInterest.bind(echo), echo.onRegisterFailed.bind(echo));
 }
 
 main();
