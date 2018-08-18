@@ -1,5 +1,5 @@
 /* Prefix */
-multicast_pref = "/iota";
+multicast_pref = "iota";
 local_pref = "local";
 
 /* Message types */

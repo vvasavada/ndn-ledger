@@ -136,13 +136,13 @@ var Echo = function Echo(keyChain, face) {
 
 Echo.prototype.onInterest = function(prefix, interest, face, interestFilterId, filter)
 {
-  console.log("ON INTEREST");
   name = interest.getName();
   var data = new Data(name);
-  if(name.toUri().startsWith(common.multicast_pref)){
+  var content = null;
+  if(name.toUri().startsWith("/" + common.multicast_pref)){
     var res = name.toUri().split("/");
     if (res[3] == common.type_notif){
-      var content = common.type_notif_reply + ";" + name.toUri();
+      content = common.type_notif_reply + ";" + name.toUri();
       var exec = require('child_process').exec, child;
       child = exec("node consumer.js GET_BUNDLE " + res[2] + " " + res[4], 
               function (error, stdout, stderr) {
@@ -153,8 +153,8 @@ Echo.prototype.onInterest = function(prefix, interest, face, interestFilterId, f
                 }
               });
     } // else if it is JOIN request (not included in common for now)
-  } else if (name.toUri().startsWith(common.local_pref)){
-    var content = common.type_get_bundle_reply + ";" + name.toUri();
+  } else if (name.toUri().startsWith("/" + common.local_pref)){
+    content = common.type_get_reply + ";" + name.toUri();
   }
 
   data.setContent(content);
