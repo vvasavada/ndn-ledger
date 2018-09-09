@@ -3,10 +3,10 @@ multicast_pref = "iota";
 local_pref = "local";
 
 /* Message types */
-type_notif = "NOTIF";
-type_notif_reply = "NOTIF_REPLY";
-type_get = "GET";
-type_get_reply = "GET_REPLY";
+type_notif = 1;
+type_notif_reply = 2;
+type_get = 3;
+type_get_reply = 4;
 
 module.exports = {
   multicast_pref,

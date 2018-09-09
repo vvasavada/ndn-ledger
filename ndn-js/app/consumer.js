@@ -20,9 +20,11 @@
 var readline = require('readline');
 var Face = require('..').Face;
 var Name = require('..').Name;
+var Interest = require('..').Interest;
+var Data = require('..').Data;
 var UnixTransport = require('..').UnixTransport;
-
 var common = require('..').Common
+var Bundle = require('../..').Bundle
 
 var onData = function(interest, data) {
   console.log("Got data packet with name " + data.getName().toUri());
@@ -39,13 +41,12 @@ var onTimeout = function(interest) {
 // Connect to the local forwarder with a Unix socket.
 var face = new Face(new UnixTransport());
 
-var notify = function() {
+var notify = function(bundleHash) {
   name = new Name(common.multicast_pref);
   name.append(common.local_pref);
-  name.append(common.type_notif);
-  name.append("1");
-  console.log("Interest " + name.toUri());
-  console.log("Notifying transaction: 1");
+  name.append(common.type_notif.toString());
+  name.append(bundleHash.digest('hex'));
+  console.log("Notification Interest " + name.toUri());
   face.expressInterest(name, onData, onTimeout);
 }
 
@@ -57,9 +58,23 @@ var get = function(notifier_pref, hash) {
   face.expressInterest(name, onData, onTimeout);
 }
 
+var generateBundle = function() {
+  
+  /* create random interest and data pair */
+  let r = Math.random().toString(36).substring(7)
+  name = new Name(common.local_pref)
+  name.append(r)
+  interest = new Interest(name)
+  data = new Data(name, r)
+
+  bundle = new Bundle( interest, data )
+  return bundle.getHash();
+}
+
 var arg = process.argv[2]
 if (arg == "NOTIF"){
-  notify();
+  bundleHash = generateBundle();
+  notify(bundleHash);
 } else if (arg == "GET_BUNDLE") {
   get(process.argv[3], process.argv[4]);
 }
