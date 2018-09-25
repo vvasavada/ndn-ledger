@@ -24,11 +24,11 @@ var Interest = require('..').Interest;
 var Data = require('..').Data;
 var UnixTransport = require('..').UnixTransport;
 var common = require('..').Common
-var Bundle = require('../..').Bundle
+var Block = require('../..').Block
 
-var onData = function(interest, data) {
+var onData = function(interest, data, close=false) {
   console.log("Got data packet with name " + data.getName().toUri());
-  console.log(data.getContent().buf().toString('binary'));
+  //console.log(data.getContent().buf().toString('binary'));
 
   face.close();  // This will cause the script to quit.
 };
@@ -41,11 +41,11 @@ var onTimeout = function(interest) {
 // Connect to the local forwarder with a Unix socket.
 var face = new Face(new UnixTransport());
 
-var notify = function(bundleHash) {
+var notify = function(blockHash) {
   name = new Name(common.multicast_pref);
   name.append(common.local_pref);
   name.append(common.type_notif.toString());
-  name.append(bundleHash.digest('hex'));
+  name.append(blockHash.digest('hex'));
   console.log("Notification Interest " + name.toUri());
   face.expressInterest(name, onData, onTimeout);
 }
@@ -54,11 +54,11 @@ var get = function(notifier_pref, hash) {
   name = new Name(notifier_pref);
   name.append(hash)
   console.log("Interest " + name.toUri());
-  console.log("Get Bundle: " + hash);
+  console.log("Get Block: " + hash);
   face.expressInterest(name, onData, onTimeout);
 }
 
-var generateBundle = function() {
+var generateBlock = function() {
   
   /* create random interest and data pair */
   let r = Math.random().toString(36).substring(7)
@@ -67,14 +67,14 @@ var generateBundle = function() {
   interest = new Interest(name)
   data = new Data(name, r)
 
-  bundle = new Bundle( interest, data )
-  return bundle.getHash();
+  block = new Block( interest, data )
+  return block.getHash();
 }
 
 var arg = process.argv[2]
 if (arg == "NOTIF"){
-  bundleHash = generateBundle();
-  notify(bundleHash);
+  blockHash = generateBlock();
+  notify(blockHash);
 } else if (arg == "GET_BUNDLE") {
   get(process.argv[3], process.argv[4]);
 }
