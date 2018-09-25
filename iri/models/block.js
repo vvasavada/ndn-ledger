@@ -1,5 +1,4 @@
-var FileReader = require('filereader')
-var Blob = require('..').ndnjs.Blob
+var Blob = require('../..').ndnjs.Blob
 var Crypto = require('crypto')
 
 /* This class is responsible to create block to be attached to Tangle.

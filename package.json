@@ -21,6 +21,6 @@
   },
   "homepage": "https://github.com/vvasavada/ndn-iota#readme",
   "dependencies": {
-    "filereader": "^0.10.3"
+    "rocksdb": "^3.0.1"
   }
 }
