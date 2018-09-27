@@ -1,41 +1,19 @@
-var RocksDb = require('rocksdb')
+var LevelUp = require('levelup')
+var LevelDown = require('leveldown')
 
-/* This class is responsible for creating RocksDB database to store information about blocks on disk.
+/* This class is responsible for creating LevelDB database to store information about blocks on disk.
  * @constructor
  */
 
-var Database = function Database()
+var Database = function()
 {
-  /* Create RocksDb instance 
+  /* Create LevelDb instance 
    * The key namespace will be:
    * 'c' + block_hash for content column family
-   * 'a' + block_hash for approvee column family
+   * 'a' + block_hash for approver column family
    * 'w' + block_hash for weight column family
    * */
-  this.db_ = new RocksDb('./database');
-}
-
-/** I/O error callback for db operations
- * @param {String} err Error to log
- */
-ioErrCb = function(err)
-{
-  if (err) return console.log('I/O error', err);
-}
-
-/** Get error callback for db operations
- * @param {String} err Error to log
- * @param {String} value
- */
-getErrCb = function(err, value)
-{
-  if (err){
-    if (err.notFound){
-      return
-    }
-
-    return ioErrCb(err);
-  }
+  this.db_ = LevelUp(LevelDown('database'));
 }
 
 /**
@@ -45,9 +23,7 @@ getErrCb = function(err, value)
  */
 Database.prototype.putContent = function(hash, content)
 {
-  this.db_.put('c' + hash, content, function(err){
-    return ioErrCb(err);
-  });
+  this.db_.put('c' + hash, content, { sync: true }, function(err){})
 }
 
 /**
@@ -58,32 +34,31 @@ Database.prototype.putContent = function(hash, content)
 Database.prototype.getContent = function(hash)
 {
   this.db_.get('c' + hash, function(err, value){
-    return getErrCb(err, value);
+    console.log(value)
   });
 }
 
 /**
- * Put approvee list of block in database
+ * Put approver list of block in database
  * @param {String} hash A block hash
- * @param {Array} approvees The block approvees
+ * @param {Array} approvers The block approvers
  */
-Database.prototype.putApprovees = function(hash, approvees)
+Database.prototype.putApprovers = function(hash, approvers)
 {
-  this.db_.put('a' + hash, approvees, function(err) {
-    return ioErrCb(err);
-  });
+  console.log(approvers)
+  this.db_.put('a' + hash, approvers, { sync: true }, function(err){})
 }
 
 /**
- * Get approvees of block from database
+ * Get approvers of block from database
  * @param {String} hash A block hash
- * @return {String} Block approvees
+ * @return {Array} Block approvers
  */
-Database.prototype.getApprovees = function(hash)
+Database.prototype.getApprovers = function(hash)
 {
   this.db_.get('a' + hash, function(err, value){
-    return getErrCb(err, value);
-  });
+    console.log(value.toString())
+  })
 }
 
 /**
@@ -93,9 +68,7 @@ Database.prototype.getApprovees = function(hash)
  */
 Database.prototype.putWeight = function(hash, weight)
 {
-  this.db_.put('w' + hash, weight, function(err) {
-    return ioErrCb(err);
-  });
+  this.db_.put('w' + hash, weight, { sync: true }, function(err){})
 }
 
 /**
@@ -106,10 +79,8 @@ Database.prototype.putWeight = function(hash, weight)
 Database.prototype.getWeight = function(hash)
 {
   this.db_.get('w' + hash, function(err, value){
-    return getErrCb(err, value);
-  });
+    console.log(value)
+  })
 }
 
-db = Database()
-
-exports.db = db
+exports.Database = Database

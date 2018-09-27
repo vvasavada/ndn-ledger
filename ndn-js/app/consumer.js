@@ -25,6 +25,7 @@ var Data = require('..').Data;
 var UnixTransport = require('..').UnixTransport;
 var common = require('..').Common
 var Block = require('../..').Block
+var tangle = require('../..').tangle
 
 var onData = function(interest, data, close=false) {
   console.log("Got data packet with name " + data.getName().toUri());
@@ -67,7 +68,9 @@ var generateBlock = function() {
   interest = new Interest(name)
   data = new Data(name, r)
 
-  block = new Block( interest, data )
+  block = new Block(interest, data)
+  console.log(tangle)
+  tangle.attach(block)
   return block.getHash();
 }
 

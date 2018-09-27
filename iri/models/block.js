@@ -34,6 +34,12 @@ var Block = function Block(interest, data)
    */
   this.hash_ =  Crypto.createHash('sha256').update(interestNameUri +
                                                    new Date().toISOString());
+
+  /* branchHash and trunkHash are initially null
+   * Tangle.attach() runs tip selection and sets them
+   */
+  this.branchHash_ = null
+  this.trunkHash_ = null
 }
 
 exports.Block = Block
@@ -54,4 +60,40 @@ Block.prototype.getHash = function()
 Block.prototype.getContent = function()
 {
   return this.content_
+}
+
+/**
+ * Get the Block branchHash
+ * @return {Hash} branchHash of this Block
+ */
+Block.prototype.getBranchHash = function()
+{
+  return this.branchHash_
+}
+
+/**
+ * Set the Block branchHash
+ * @param {Hash} hash branchHash of this Block
+ */
+Block.prototype.setBranchHash = function(hash)
+{
+  this.branchHash_ = hash
+}
+
+/**
+ * Get the Block trunkHash
+ * @return {Hash} trunkHash of this Block
+ */
+Block.prototype.getTrunkHash = function()
+{
+  return this.trunkHash_
+}
+
+/**
+ * Set the Block trunkHash
+ * @param {Hash} hash trunkHash of this Block
+ */
+Block.prototype.setTrunkHash = function(hash)
+{
+  this.trunkHash_ = hash
 }
