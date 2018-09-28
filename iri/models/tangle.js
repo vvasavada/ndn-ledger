@@ -97,7 +97,7 @@ tipSelection = function(db, genesisHash, tips)
  * write it to leveldb
  * @param {Block} block The block to be attached
  */
-Tangle.prototype.attach = async function(block)
+Tangle.prototype.attach = function(block)
 {
   hash = block.getHash()
 
@@ -133,6 +133,35 @@ Tangle.prototype.attach = async function(block)
     this.updateApprovers(branchHash, hash)
   }
 
+}
+
+/**
+ * Get block from the Tangle, that is,
+ * read it from leveldb
+ * @param {String} hash Hash of the block to be fetched
+ * @return {Block} The block fetched
+ */
+Tangle.prototype.fetch = function(hash)
+{
+  block = new Block()
+
+  weightFunc = this.db_.getWeight(hash)
+  weightFunc.then(function(weight){
+    block.setWeight(weight)
+  })
+
+  contentFunc = this.db_.getContent(hash)
+  contentFunc.then(function(content){
+    block.setContent(content)
+  })
+
+  approversFunc = this.db_.getApprovers(hash)
+  approversFunc.then(function(approvers){
+    approvers = [...approvers]
+    block.setApprovers(approvers)
+  })
+
+  return block
 }
 
 tangle = new Tangle()

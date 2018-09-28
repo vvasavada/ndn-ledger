@@ -25,6 +25,7 @@ var SafeBag = require('..').SafeBag;
 var KeyChain = require('..').KeyChain;
 
 var common = require('..').Common;
+var tangle = require('../..').tangle
 
 var DEFAULT_RSA_PUBLIC_KEY_DER = new Buffer([
     0x30, 0x82, 0x01, 0x22, 0x30, 0x0d, 0x06, 0x09, 0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 0x01, 0x01,
@@ -141,20 +142,20 @@ Echo.prototype.onInterest = function(prefix, interest, face, interestFilterId, f
   var content = null;
   if(name.toUri().startsWith("/" + common.multicast_pref)){
     var res = name.toUri().split("/");
-    if (res[3] == common.type_notif){
-      content = common.type_notif_reply + ";" + name.toUri();
-      var exec = require('child_process').exec, child;
-      child = exec("node consumer.js GET_BUNDLE " + res[2] + " " + res[4], 
-              function (error, stdout, stderr) {
-                console.log('stdout: ' + stdout);
-                console.log('stderr: ' + stderr);
-                if (error !== null) {
-                  console.log('exec error: ' + error);
-                }
-              });
-    } // else if it is JOIN request (not included in common for now)
+    var exec = require('child_process').exec, child;
+    child = exec("node consumer.js GET_BUNDLE " + res[1] + " " + res[3], 
+            function (error, stdout, stderr) {
+              console.log('stdout: ' + stdout);
+              console.log('stderr: ' + stderr);
+              if (error !== null) {
+                console.log('exec error: ' + error);
+              }
+            });
   } else if (name.toUri().startsWith("/" + common.local_pref)){
-    content = common.type_get_reply + ";" + name.toUri();
+    var res = name.toUri().split("/")
+    hash = res[2]
+    block = tangle.fetch(hash)
+    content = block
   }
 
   data.setContent(content);
