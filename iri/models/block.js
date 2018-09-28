@@ -33,7 +33,7 @@ var Block = function Block(interest, data)
    * Interest/Data name and current timestamp
    */
   this.hash_ =  Crypto.createHash('sha256').update(interestNameUri +
-                                                   new Date().toISOString());
+                                                   new Date().toISOString()).digest('hex')
 
   /* branchHash and trunkHash are initially null
    * Tangle.attach() runs tip selection and sets them
@@ -46,7 +46,7 @@ exports.Block = Block
 
 /**
  * Get the Block hash
- * @return {Hash} SHA256 hash of this Block
+ * @return {String} SHA256 hash of this Block
  */
 Block.prototype.getHash = function()
 {
@@ -64,7 +64,7 @@ Block.prototype.getContent = function()
 
 /**
  * Get the Block branchHash
- * @return {Hash} branchHash of this Block
+ * @return {String} branchHash of this Block
  */
 Block.prototype.getBranchHash = function()
 {
@@ -73,7 +73,7 @@ Block.prototype.getBranchHash = function()
 
 /**
  * Set the Block branchHash
- * @param {Hash} hash branchHash of this Block
+ * @param {String} hash branchHash of this Block
  */
 Block.prototype.setBranchHash = function(hash)
 {
@@ -82,7 +82,7 @@ Block.prototype.setBranchHash = function(hash)
 
 /**
  * Get the Block trunkHash
- * @return {Hash} trunkHash of this Block
+ * @return {String} trunkHash of this Block
  */
 Block.prototype.getTrunkHash = function()
 {
@@ -91,7 +91,7 @@ Block.prototype.getTrunkHash = function()
 
 /**
  * Set the Block trunkHash
- * @param {Hash} hash trunkHash of this Block
+ * @param {String} hash trunkHash of this Block
  */
 Block.prototype.setTrunkHash = function(hash)
 {

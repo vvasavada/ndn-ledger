@@ -29,7 +29,6 @@ var tangle = require('../..').tangle
 
 var onData = function(interest, data, close=false) {
   console.log("Got data packet with name " + data.getName().toUri());
-  //console.log(data.getContent().buf().toString('binary'));
 
   face.close();  // This will cause the script to quit.
 };
@@ -46,7 +45,7 @@ var notify = function(blockHash) {
   name = new Name(common.multicast_pref);
   name.append(common.local_pref);
   name.append(common.type_notif.toString());
-  name.append(blockHash.digest('hex'));
+  name.append(blockHash);
   console.log("Notification Interest " + name.toUri());
   face.expressInterest(name, onData, onTimeout);
 }
@@ -69,7 +68,6 @@ var generateBlock = function() {
   data = new Data(name, r)
 
   block = new Block(interest, data)
-  console.log(tangle)
   tangle.attach(block)
   return block.getHash();
 }

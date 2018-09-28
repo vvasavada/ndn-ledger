@@ -23,7 +23,9 @@ var Database = function()
  */
 Database.prototype.putContent = function(hash, content)
 {
-  this.db_.put('c' + hash, content, { sync: true }, function(err){})
+  this.db_.put('c' + hash, content, { sync: true }, function(err){
+    if (err) console.log(err)
+  })
 }
 
 /**
@@ -33,9 +35,7 @@ Database.prototype.putContent = function(hash, content)
  */
 Database.prototype.getContent = function(hash)
 {
-  this.db_.get('c' + hash, function(err, value){
-    console.log(value)
-  });
+  return this.db_.get('c' + hash)
 }
 
 /**
@@ -45,8 +45,9 @@ Database.prototype.getContent = function(hash)
  */
 Database.prototype.putApprovers = function(hash, approvers)
 {
-  console.log(approvers)
-  this.db_.put('a' + hash, approvers, { sync: true }, function(err){})
+  this.db_.put('a' + hash, approvers, { sync: true }, function(err){
+    if (err) console.log(err)
+  })
 }
 
 /**
@@ -54,11 +55,9 @@ Database.prototype.putApprovers = function(hash, approvers)
  * @param {String} hash A block hash
  * @return {Array} Block approvers
  */
-Database.prototype.getApprovers = function(hash)
+Database.prototype.getApprovers = async function(hash)
 {
-  this.db_.get('a' + hash, function(err, value){
-    console.log(value.toString())
-  })
+  return this.db_.get('a' + hash)
 }
 
 /**
@@ -68,7 +67,9 @@ Database.prototype.getApprovers = function(hash)
  */
 Database.prototype.putWeight = function(hash, weight)
 {
-  this.db_.put('w' + hash, weight, { sync: true }, function(err){})
+  this.db_.put('w' + hash, weight, { sync: true }, function(err){
+    if (err) console.log(err)
+  })
 }
 
 /**
@@ -78,9 +79,7 @@ Database.prototype.putWeight = function(hash, weight)
  */
 Database.prototype.getWeight = function(hash)
 {
-  this.db_.get('w' + hash, function(err, value){
-    console.log(value)
-  })
+  return this.db_.get('w' + hash)
 }
 
 exports.Database = Database

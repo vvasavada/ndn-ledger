@@ -1,5 +1,5 @@
 var Database = require('../..').Database
-var Common = require('../..').Common
+var Crypto = require('crypto')
 
 /**
  * This class represents Tangle. 
@@ -10,23 +10,50 @@ var Tangle = function Tangle()
   this.db_ =  new Database()
 
   /* Attach genesis */
-  genesisHash = Common.genesisHash
+  this.genesisHash_ =  Crypto.createHash('sha256').update('genesisBlockOfTangle').digest('hex')
 
-  this.db_.putContent(genesisHash, '')
-  this.db_.putWeight(genesisHash, 1)
-  this.db_.putApprovers(genesisHash, [1])
+  this.db_.putContent(this.genesisHash_, '')
+  this.db_.putWeight(this.genesisHash_, 1)
+  this.db_.putApprovers(this.genesisHash_, [])
+  
 
-  Common.tips.push(genesisHash)
+  /* Initialize tips */
+  this.tips_ = [ this.genesisHash_ ]
+}
+
+/**
+ * Update Approvers
+ */
+Tangle.prototype.updateApprovers = function(approveeHash, approverHash)
+{
+  approversFunc = this.db_.getApprovers(approveeHash)
+  approversFunc.then(function(approvers){
+    approvers = [...approvers]
+    approvers.push(approverHash)
+    tangle.db_.putApprovers(approveeHash, approvers)
+  })
+}
+
+/**
+ * Update weight
+ */
+Tangle.prototype.updateWeight = function(hash)
+{
+  weightFunc = this.db_.getWeight(hash)
+  weightFunc.then(function(weight){
+    weight = weight + 1
+    tangle.db_.putWeight(hash, weight)
+  })
 }
 
 /**
  * Tip Selection Algorithm
  * @return {String} Hash of selected tip
  */
-tipSelection = function(db)
+tipSelection = function(db, genesisHash, tips)
 {
-  current = Common.genesisHash
-  while (!(Common.tips.includes(current))){
+  current = genesisHash
+  while (!(tips.includes(current))){
     approvers = db.getApprovers(current)
     weights = []
     for (approver in approvers){
@@ -70,10 +97,9 @@ tipSelection = function(db)
  * write it to leveldb
  * @param {Block} block The block to be attached
  */
-Tangle.prototype.attach = function(block)
+Tangle.prototype.attach = async function(block)
 {
-  return
-  hash = block.getHash().digest('hex')
+  hash = block.getHash()
 
   this.db_.putContent(hash, block.getContent().buf().toString())
   this.db_.putWeight(hash, 1)
@@ -89,8 +115,8 @@ Tangle.prototype.attach = function(block)
       * We perform MC random walk from genesis to tips
       * Probability of node i being chosen = W_i/W_total
       */
-    branchHash = tipSelection(this.db_)
-    trunkHash = tipSelection(this.db_)
+    branchHash = tipSelection(this.db_, this.genesisHash_, this.tips_)
+    trunkHash = tipSelection(this.db_, this.genesisHash_, this.tips_)
   } else {
     branchHash = block.branchHash.read().toString('hex')
     trunkHash = block.trunkHash.read().toString('hex')
@@ -99,18 +125,12 @@ Tangle.prototype.attach = function(block)
   /**
     * Update these branch and trunk
     */
-  this.db_.putWeight(branchHash, this.db_.getWeight(branchHash) + 1)
-
-  approvers = this.db_.getApprovers(branchHash)
-  approvers.push(hash)
-  this.db_.putApprovers(branchHash, approvers)
-
+  this.updateWeight(branchHash)
+  this.updateApprovers(branchHash, hash)
+  
   if (branchHash != trunkHash){
-    this.db_.putWeight(trunkHash, this.db_.getWeight(trunkHash) + 1)
-
-    approvers = this.db_.getApprovers(trunkHash)
-    approvers.push(hash)
-    this.db_.putApprovers(trunkHash, approvers)
+    this.updateWeight(branchHash)
+    this.updateApprovers(branchHash, hash)
   }
 
 }
