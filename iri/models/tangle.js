@@ -118,8 +118,8 @@ Tangle.prototype.attach = function(block)
     branchHash = tipSelection(this.db_, this.genesisHash_, this.tips_)
     trunkHash = tipSelection(this.db_, this.genesisHash_, this.tips_)
   } else {
-    branchHash = block.branchHash.read().toString('hex')
-    trunkHash = block.trunkHash.read().toString('hex')
+    branchHash = block.branchHash
+    trunkHash = block.trunkHash
   }
 
   /**
@@ -127,11 +127,14 @@ Tangle.prototype.attach = function(block)
     */
   this.updateWeight(branchHash)
   this.updateApprovers(branchHash, hash)
-  
+
   if (branchHash != trunkHash){
     this.updateWeight(branchHash)
     this.updateApprovers(branchHash, hash)
   }
+
+  this.db_.putBranchHash(hash, branchHash)
+  this.db_.putTrunkHash(hash, trunkHash)
 
 }
 
@@ -141,27 +144,13 @@ Tangle.prototype.attach = function(block)
  * @param {String} hash Hash of the block to be fetched
  * @return {Block} The block fetched
  */
-Tangle.prototype.fetch = function(hash)
+Tangle.prototype.fetch = async function(hash)
 {
-  block = new Block()
-
-  weightFunc = this.db_.getWeight(hash)
-  weightFunc.then(function(weight){
-    block.setWeight(weight)
-  })
-
-  contentFunc = this.db_.getContent(hash)
-  contentFunc.then(function(content){
-    block.setContent(content)
-  })
-
-  approversFunc = this.db_.getApprovers(hash)
-  approversFunc.then(function(approvers){
-    approvers = [...approvers]
-    block.setApprovers(approvers)
-  })
-
-  return block
+  content = await this.db_.getContent(hash)
+  branchHash = await this.db_.getBranchHash(hash)
+  trunkHash = await this.db_.getTrunkHash(hash)
+  
+  return [ content, branchHash, trunkHash ]
 }
 
 tangle = new Tangle()

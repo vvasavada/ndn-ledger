@@ -1,5 +1,6 @@
-var LevelUp = require('levelup')
-var LevelDown = require('leveldown')
+var level = require('level-party')
+
+const {promisify} = require('util')
 
 /* This class is responsible for creating LevelDB database to store information about blocks on disk.
  * @constructor
@@ -12,8 +13,12 @@ var Database = function()
    * 'c' + block_hash for content column family
    * 'a' + block_hash for approver column family
    * 'w' + block_hash for weight column family
+   * 'b' + block_hash for branchHash column family
+   * 't' + block_hash for trunkHash column family
    * */
-  this.db_ = LevelUp(LevelDown('database'));
+  dbNoPromise = level('database')
+  this.db_ = { get: promisify(dbNoPromise.get.bind(dbNoPromise)), 
+               put: promisify(dbNoPromise.put.bind(dbNoPromise)) }
 }
 
 /**
@@ -31,7 +36,7 @@ Database.prototype.putContent = function(hash, content)
 /**
  * Get content of block from database
  * @param {String} hash A block hash
- * @return {String} Block contents
+ * @return {Promise} Block contents
  */
 Database.prototype.getContent = function(hash)
 {
@@ -53,7 +58,7 @@ Database.prototype.putApprovers = function(hash, approvers)
 /**
  * Get approvers of block from database
  * @param {String} hash A block hash
- * @return {Array} Block approvers
+ * @return {Promise} Block approvers
  */
 Database.prototype.getApprovers = async function(hash)
 {
@@ -75,11 +80,55 @@ Database.prototype.putWeight = function(hash, weight)
 /**
  * Get weight of block in database
  * @param {String} hash A block hash
- * @return {String} Block weight
+ * @return {Promise} Block weight
  */
 Database.prototype.getWeight = function(hash)
 {
   return this.db_.get('w' + hash)
+}
+
+/**
+ * Put branchHash of block in database
+ * @param {String} hash A block hash
+ * @param {String} branchHash The branchHash of a block
+ */
+Database.prototype.putBranchHash = function(hash, branchHash)
+{
+  this.db_.put('b' + hash, branchHash, { sync: true }, function(err){
+    if (err) console.log(err)
+  })
+}
+
+/**
+ * Get branchHash of block in database
+ * @param {String} hash A block hash
+ * @return {Promise} Block branchHash
+ */
+Database.prototype.getBranchHash = function(hash)
+{
+  return this.db_.get('b' + hash)
+}
+
+/**
+ * Put trunkHash of block in database
+ * @param {String} hash A block hash
+ * @param {String} trunkHash The trunkHash of a block
+ */
+Database.prototype.putTrunkHash = function(hash, trunkHash)
+{
+  this.db_.put('t' + hash, trunkHash, { sync: true }, function(err){
+    if (err) console.log(err)
+  })
+}
+
+/**
+ * Get trunkHash of block in database
+ * @param {String} hash A block hash
+ * @return {Promise} Block trunkHash
+ */
+Database.prototype.getTrunkHash = function(hash)
+{
+  return this.db_.get('t' + hash)
 }
 
 exports.Database = Database

@@ -44,7 +44,6 @@ var face = new Face(new UnixTransport());
 var notify = function(blockHash) {
   name = new Name(common.multicast_pref);
   name.append(common.local_pref);
-  name.append(common.type_notif.toString());
   name.append(blockHash);
   console.log("Notification Interest " + name.toUri());
   face.expressInterest(name, onData, onTimeout);
@@ -52,7 +51,7 @@ var notify = function(blockHash) {
 
 var get = function(notifier_pref, hash) {
   name = new Name(notifier_pref);
-  name.append(hash)
+  name.append(hash);
   console.log("Interest " + name.toUri());
   console.log("Get Block: " + hash);
   face.expressInterest(name, onData, onTimeout);

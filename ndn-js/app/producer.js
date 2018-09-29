@@ -135,7 +135,7 @@ var Echo = function Echo(keyChain, face) {
   this.face = face;
 };
 
-Echo.prototype.onInterest = function(prefix, interest, face, interestFilterId, filter)
+Echo.prototype.onInterest = async function(prefix, interest, face, interestFilterId, filter)
 {
   name = interest.getName();
   var data = new Data(name);
@@ -143,7 +143,7 @@ Echo.prototype.onInterest = function(prefix, interest, face, interestFilterId, f
   if(name.toUri().startsWith("/" + common.multicast_pref)){
     var res = name.toUri().split("/");
     var exec = require('child_process').exec, child;
-    child = exec("node consumer.js GET_BUNDLE " + res[1] + " " + res[3], 
+    child = exec("node consumer.js GET_BUNDLE " + res[2] + " " + res[3], 
             function (error, stdout, stderr) {
               console.log('stdout: ' + stdout);
               console.log('stderr: ' + stderr);
@@ -154,8 +154,9 @@ Echo.prototype.onInterest = function(prefix, interest, face, interestFilterId, f
   } else if (name.toUri().startsWith("/" + common.local_pref)){
     var res = name.toUri().split("/")
     hash = res[2]
-    block = tangle.fetch(hash)
-    content = block
+    blockData = await tangle.fetch(hash)
+    blockData.unshift(hash)
+    content = blockData
   }
 
   data.setContent(content);

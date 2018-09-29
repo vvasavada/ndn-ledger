@@ -10,10 +10,8 @@ var Crypto = require('crypto')
 
 var Block = function Block(interest, data)
 {
-  if (!(interest && data)) {
-    throw new Error("Requires both interet and data. One or more missing.");
-  }
-
+  if (interest == undefined && data == undefined) return
+  
   console.log("Creating block for Interest/Data: " + interest.getName())
 
   /* Block contains following information:
