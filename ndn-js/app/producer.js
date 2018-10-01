@@ -167,7 +167,7 @@ Echo.prototype.onInterest = async function(prefix, interest, face, interestFilte
     content = blockData
   }
 
-  data.setContent(content);
+  data.setContent(content.join());
 	this.keyChain.sign(data);
 
   try {
