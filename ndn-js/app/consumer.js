@@ -27,8 +27,22 @@ var common = require('..').Common
 var Block = require('../..').Block
 var tangle = require('../..').tangle
 
-var onData = function(interest, data, close=false) {
-  console.log("Got data packet with name " + data.getName().toUri());
+var onData = function(interest, data) {
+  name = data.getName()
+  console.log("Got data packet with name " + name.toUri());
+
+  /** if this is a block i.e. reply to Get Bundle request */
+  if (name.toUri().startsWith("/" + common.local_pref)){
+    blockData = data.getContent().buf()
+    hash = blockData[0]
+    content = blockData[1]
+    branchHash = blockData[2]
+    trunkHash = blockData[3]
+    tips = blockData.slice(start=4)
+    
+    /* Before attaching this new block to tangle, we need to sync */
+  }
+  
 
   face.close();  // This will cause the script to quit.
 };

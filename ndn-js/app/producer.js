@@ -156,6 +156,14 @@ Echo.prototype.onInterest = async function(prefix, interest, face, interestFilte
     hash = res[2]
     blockData = await tangle.fetch(hash)
     blockData.unshift(hash)
+    /* blockData will be:
+     *  - hash
+     *  - content
+     *  - branchHash
+     *  - trunkHash
+     *  - tips*
+     */
+    blockData = blockData.concat(tangle.getTips())
     content = blockData
   }
 

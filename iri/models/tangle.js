@@ -153,5 +153,14 @@ Tangle.prototype.fetch = async function(hash)
   return [ content, branchHash, trunkHash ]
 }
 
+/**
+ * Get Tangle tips
+ * @return {Array} Tips
+ */
+Tangle.prototype.getTips = function()
+{
+  return this.tips_
+}
+
 tangle = new Tangle()
 exports.tangle = tangle

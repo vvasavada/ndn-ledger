@@ -52,12 +52,31 @@ Block.prototype.getHash = function()
 };
 
 /**
+ * Set the Block hash
+ * @param {String} SHA256 hash to be set for this Block
+ */
+Block.prototype.setHash = function(hash)
+{
+  this.hash_ = hash
+}
+
+/**
  * Get the Block content
  * @return {Blob} Content of this Block
  */
 Block.prototype.getContent = function()
 {
   return this.content_
+}
+
+/**
+ * Set the Block content
+ * @param {String} Content to be set for this Block
+ */
+Block.prototype.setContent = function(content)
+{
+  blob = new Blob(content);
+  this.content_ = blob
 }
 
 /**
