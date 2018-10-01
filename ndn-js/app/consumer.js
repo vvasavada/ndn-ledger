@@ -32,8 +32,15 @@ var onData = function(interest, data) {
   console.log("Got data packet with name " + name.toUri());
 
   /** if this is a block i.e. reply to Get Bundle request */
-  if (name.toUri().startsWith("/" + common.local_pref)){
-    blockData = data.getContent().buf()
+  if (!(name.toUri().startsWith("/" + common.multi_pref))){
+    blockData = [...data.getContent().buf().toString().split(',')]
+    /* Block data received consists of an array with:
+     *  - hash
+     *  - content
+     *  - branchHash
+     *  - trunkHash
+     *  - Tips*
+     */
     hash = blockData[0]
     content = blockData[1]
     branchHash = blockData[2]
@@ -41,6 +48,7 @@ var onData = function(interest, data) {
     tips = blockData.slice(start=4)
     
     /* Before attaching this new block to tangle, we need to sync */
+
   }
   
 
