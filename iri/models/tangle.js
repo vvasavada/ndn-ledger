@@ -47,6 +47,30 @@ Tangle.prototype.updateWeight = function(hash)
 }
 
 /**
+ * Update weights
+ * @param {String} hash Hash of first block in the chain
+ */
+Tangle.prototype.updateWeights = async function(hash, visited)
+{
+  visited.push(hash)
+  if (hash == this.genesisHash_){
+    return
+  }
+  
+  branchCurrent = await this.db_.getBranchHash(hash)
+  if (!(branchCurrent in visited)){
+    this.updateWeight(branchCurrent)
+    this.updateWeights(branchCurrent, visited)
+  }
+
+  trunkCurrent = await this.db_.getTrunkHash(hash)
+  if (trunkCurrent != branchCurrent && !(trunkCurrent in visited)){
+    this.updateWeight(trunkCurrent)
+    this.updateWeights(trunkCurrent, visited)
+  }
+}
+
+/**
  * Tip Selection Algorithm
  * @return {String} Hash of selected tip
  */

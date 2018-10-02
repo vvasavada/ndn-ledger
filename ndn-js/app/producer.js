@@ -139,32 +139,34 @@ Echo.prototype.onInterest = async function(prefix, interest, face, interestFilte
 {
   name = interest.getName();
   var data = new Data(name);
-  var content = null;
+  var content = [];
+  var res = name.toUri().split("/");
   if(name.toUri().startsWith("/" + common.multicast_pref)){
-    var res = name.toUri().split("/");
-    var exec = require('child_process').exec, child;
-    child = exec("node consumer.js GET_BUNDLE " + res[2] + " " + res[3], 
-            function (error, stdout, stderr) {
-              console.log('stdout: ' + stdout);
-              console.log('stderr: ' + stderr);
-              if (error !== null) {
-                console.log('exec error: ' + error);
-              }
-            });
+    // Send GET Block request only if it wasn't notified by this node
+    if (res[2] != common.local_pref){
+      var exec = require('child_process').exec, child;
+      child = exec("node consumer.js GET_BUNDLE " + res[2] + " " + res[3], 
+              function (error, stdout, stderr) {
+                console.log('stdout: ' + stdout);
+                console.log('stderr: ' + stderr);
+                if (error !== null) {
+                  console.log('exec error: ' + error);
+                }
+              });
+    }
   } else if (name.toUri().startsWith("/" + common.local_pref)){
-    var res = name.toUri().split("/")
-    hash = res[2]
-    blockData = await tangle.fetch(hash)
-    blockData.unshift(hash)
-    /* blockData will be:
-     *  - hash
-     *  - content
-     *  - branchHash
-     *  - trunkHash
-     *  - tips*
-     */
-    blockData = blockData.concat(tangle.getTips())
-    content = blockData
+      hash = res[2]
+      blockData = await tangle.fetch(hash)
+      blockData.unshift(hash)
+      /* blockData will be:
+      *  - hash
+      *  - content
+      *  - branchHash
+      *  - trunkHash
+      *  - tips*
+      */
+      blockData = blockData.concat(tangle.getTips())
+      content = blockData
   }
 
   data.setContent(content.join());
