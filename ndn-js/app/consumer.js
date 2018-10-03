@@ -79,24 +79,37 @@ var get = function(notifier_pref, hash) {
   face.expressInterest(name, onData, onTimeout);
 }
 
-var generateBlock = function() {
-  
+var ensureTangleIsReady = function(){
+  return new Promise(function(resolve, reject) {
+    (function waitForTangle(){
+      if (tangle.genesisHash_) return resolve();
+      setTimeout(waitForTangle, 30);
+    })();
+  });
+}
+
+var generateBlock = async function() {
   /* create random interest and data pair */
   let r = Math.random().toString(36).substring(7)
   name = new Name(common.local_pref)
   name.append(r)
   interest = new Interest(name)
   data = new Data(name, r)
-
   block = new Block(interest, data)
+  await ensureTangleIsReady()
   tangle.attach(block)
   return block.getHash();
 }
 
-var arg = process.argv[2]
-if (arg == "NOTIF"){
-  blockHash = generateBlock();
-  notify(blockHash);
-} else if (arg == "GET_BUNDLE") {
-  get(process.argv[3], process.argv[4]);
+function main(){
+  var arg = process.argv[2]
+  if (arg == "NOTIF"){
+    generateBlock().then(function(blockHash){
+      notify(blockHash);
+    });
+  } else if (arg == "GET_BUNDLE") {
+    get(process.argv[3], process.argv[4]);
+  }
 }
+
+main();

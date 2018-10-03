@@ -131,4 +131,24 @@ Database.prototype.getTrunkHash = function(hash)
   return this.db_.get('t' + hash)
 }
 
+/**
+ * Put startup details in database
+ * @param {Array} details Startup details to be put in Database
+ */
+Database.prototype.putStartupDetails = function(details)
+{
+  this.db_.put('startup', details, { sync: true }, function(err){
+    if (err) console.log(err)
+  })
+}
+
+/**
+ * Get startup details from database
+ * @return {Promise} Startup details
+ */
+Database.prototype.getStartupDetails = function()
+{
+  return this.db_.get('startup')
+}
+
 exports.Database = Database

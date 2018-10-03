@@ -1,5 +1,6 @@
 var Database = require('../..').Database
 var Crypto = require('crypto')
+var fs = require('fs')
 
 /**
  * This class represents Tangle. 
@@ -8,17 +9,33 @@ var Crypto = require('crypto')
 var Tangle = function Tangle()
 {
   this.db_ =  new Database()
+  this.tips_ = null
+  this.genesisHash_ = null
+}
 
-  /* Attach genesis */
-  this.genesisHash_ =  Crypto.createHash('sha256').update('genesisBlockOfTangle').digest('hex')
+Tangle.prototype.populate = function(){
+  if (!(fs.existsSync('database'))){
+    /* Attach genesis */
+    this.genesisHash_ =  Crypto.createHash('sha256').update('genesisBlockOfTangle').digest('hex')
 
-  this.db_.putContent(this.genesisHash_, '')
-  this.db_.putWeight(this.genesisHash_, 1)
-  this.db_.putApprovers(this.genesisHash_, [])
-  
+    this.db_.putContent(this.genesisHash_, '')
+    this.db_.putWeight(this.genesisHash_, 1)
+    this.db_.putApprovers(this.genesisHash_, [])
+    
+    /* Initialize tips */
+    this.tips_ = [ this.genesisHash_ ]
 
-  /* Initialize tips */
-  this.tips_ = [ this.genesisHash_ ]
+    // Startup details are [genesisHash, Tips*]
+    startupDetails = [this.genesisHash_, this.genesisHash_]
+    this.db_.putStartupDetails(startupDetails)
+  } else {
+    startupDetailsFunc = this.db_.getStartupDetails()
+    startupDetailsFunc.then(function(startupDetails){
+      startupDetails = [...startupDetails.toString().split(',')]
+      tangle.genesisHash_ = startupDetails[0]
+      tangle.tips_ = startupDetails.slice(1)
+    })
+  }
 }
 
 /**
@@ -187,4 +204,5 @@ Tangle.prototype.getTips = function()
 }
 
 tangle = new Tangle()
+tangle.populate()
 exports.tangle = tangle
