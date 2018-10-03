@@ -91,15 +91,16 @@ Tangle.prototype.updateWeights = async function(hash, visited)
  * Tip Selection Algorithm
  * @return {String} Hash of selected tip
  */
-tipSelection = function(db, genesisHash, tips)
+tipSelection = async function(db, genesisHash, tips)
 {
   current = genesisHash
   while (!(tips.includes(current))){
-    approvers = db.getApprovers(current)
+    approvers = await db.getApprovers(current)
+    approvers = [...approvers.toString().split(',')]
     weights = []
-    for (approver in approvers){
+    approvers.forEach(function(approver){
       weights.push(db.getWeight(approver))
-    }
+    });
 
     selectedApprover = null
 
@@ -138,7 +139,7 @@ tipSelection = function(db, genesisHash, tips)
  * write it to leveldb
  * @param {Block} block The block to be attached
  */
-Tangle.prototype.attach = function(block)
+Tangle.prototype.attach = async function(block)
 {
   hash = block.getHash()
 
@@ -156,8 +157,8 @@ Tangle.prototype.attach = function(block)
       * We perform MC random walk from genesis to tips
       * Probability of node i being chosen = W_i/W_total
       */
-    branchHash = tipSelection(this.db_, this.genesisHash_, this.tips_)
-    trunkHash = tipSelection(this.db_, this.genesisHash_, this.tips_)
+    branchHash = await tipSelection(this.db_, this.genesisHash_, this.tips_)
+    trunkHash = await tipSelection(this.db_, this.genesisHash_, this.tips_)
   } else {
     branchHash = block.branchHash
     trunkHash = block.trunkHash
@@ -174,9 +175,21 @@ Tangle.prototype.attach = function(block)
     this.updateApprovers(branchHash, hash)
   }
 
+  this.tips_.push(hash)
+  if (this.tips_.includes(branchHash)){
+    this.tips_.splice(this.tips_.indexOf(branchHash), 1);
+  }
+
+  if (this.tips_.includes(trunkHash)){
+    this.tips_.splice(this.tips_.indexOf(trunkHash), 1);
+  }
+
+  details = [this.genesisHash_].concat(this.tips_)
+  this.db_.putStartupDetails(details)
+
   this.db_.putBranchHash(hash, branchHash)
   this.db_.putTrunkHash(hash, trunkHash)
-
+  console.log(this.tips_)
 }
 
 /**
@@ -198,9 +211,11 @@ Tangle.prototype.fetch = async function(hash)
  * Get Tangle tips
  * @return {Array} Tips
  */
-Tangle.prototype.getTips = function()
+Tangle.prototype.getTips = async function()
 {
-  return this.tips_
+  tips = await this.db_.getStartupDetails()
+  tips = [...tips.toString().split(',')].slice(1)
+  return tips
 }
 
 tangle = new Tangle()

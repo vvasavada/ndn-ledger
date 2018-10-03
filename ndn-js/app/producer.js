@@ -165,7 +165,8 @@ Echo.prototype.onInterest = async function(prefix, interest, face, interestFilte
       *  - trunkHash
       *  - tips*
       */
-      blockData = blockData.concat(tangle.getTips())
+      tips = await tangle.getTips()
+      blockData = blockData.concat(tips)
       content = blockData
   }
 

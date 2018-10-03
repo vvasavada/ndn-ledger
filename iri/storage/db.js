@@ -60,7 +60,7 @@ Database.prototype.putApprovers = function(hash, approvers)
  * @param {String} hash A block hash
  * @return {Promise} Block approvers
  */
-Database.prototype.getApprovers = async function(hash)
+Database.prototype.getApprovers = function(hash)
 {
   return this.db_.get('a' + hash)
 }

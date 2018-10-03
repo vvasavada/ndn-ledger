@@ -97,7 +97,7 @@ var generateBlock = async function() {
   data = new Data(name, r)
   block = new Block(interest, data)
   await ensureTangleIsReady()
-  tangle.attach(block)
+  await tangle.attach(block)
   return block.getHash();
 }
 
