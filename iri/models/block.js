@@ -8,12 +8,13 @@ var Crypto = require('crypto')
  * @param {Data} data An object of Data paired with interest to be attached to a block
  */
 
-var Block = function Block(content, genesis=false)
+var Block = function Block(prefix, content, genesis=false)
 {
   /* Block contains following information:
+   * Block name | /producer/hash
    * Block hash  | Unique hash identifying this block
    * Branch block  | Block being approved
-   * Trunk block | Block bring approved
+   * Trunk block | Block being approved
    * Content  | Interest/Data name followed by Data content
    * */
 
@@ -33,11 +34,14 @@ var Block = function Block(content, genesis=false)
 
   console.log("Created block: " + this.hash_)
 
-  /* branchHash and trunkHash are initially null
+  /* branch and trunk are initially null
    * Tangle.attach() runs tip selection and sets them
    */
-  this.branchHash_ = null
-  this.trunkHash_ = null
+  this.branch_ = null
+  this.trunk_ = null
+
+  /* Assign this block a name */
+  this.name_ = "/" + prefix + "/" + this.hash_ 
 }
 
 exports.Block = Block
@@ -80,37 +84,46 @@ Block.prototype.setContent = function(content)
 }
 
 /**
- * Get the Block branchHash
- * @return {String} branchHash of this Block
+ * Get the Block branch
+ * @return {String} branch of this Block
  */
 Block.prototype.getBranchHash = function()
 {
-  return this.branchHash_
+  return this.branch_
 }
 
 /**
- * Set the Block branchHash
- * @param {String} hash branchHash of this Block
+ * Set the Block branch
+ * @param {String} name branch of this Block
  */
-Block.prototype.setBranchHash = function(hash)
+Block.prototype.setBranchHash = function(name)
 {
-  this.branchHash_ = hash
+  this.branch_ = name
 }
 
 /**
- * Get the Block trunkHash
- * @return {String} trunkHash of this Block
+ * Get the Block trunk
+ * @return {String} trunk of this Block
  */
 Block.prototype.getTrunkHash = function()
 {
-  return this.trunkHash_
+  return this.trunk_
 }
 
 /**
- * Set the Block trunkHash
- * @param {String} hash trunkHash of this Block
+ * Set the Block trunk
+ * @param {String} name Trunk of this Block
  */
-Block.prototype.setTrunkHash = function(hash)
+Block.prototype.setTrunkHash = function(name)
 {
-  this.trunkHash_ = hash
+  this.trunk_ = name
+}
+
+/**
+ * Get the Block name
+ * @return {String} name of the Block
+ */
+Block.prototype.getName = function()
+{
+  return this.name_
 }

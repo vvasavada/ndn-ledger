@@ -160,8 +160,8 @@ Echo.prototype.onInterest = async function(prefix, interest, face, interestFilte
       /* blockData will be:
       *  - hash
       *  - content
-      *  - branchHash
-      *  - trunkHash
+      *  - branch
+      *  - trunk
       *  - tips*
       */
       tips = await tangle.getTips()

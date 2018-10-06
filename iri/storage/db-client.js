@@ -15,8 +15,8 @@ var Database = function()
    * 'e' + block_hash for entire block column family
    * 'a' + block_hash for approver column family
    * 'w' + block_hash for weight column family
-   * 'b' + block_hash for branchHash column family
-   * 't' + block_hash for trunkHash column family
+   * 'b' + block_hash for branch column family
+   * 't' + block_hash for trunk column family
    * 'startup' for startup column family
    * */
   dbNoPromise = multilevel.client();
@@ -95,46 +95,48 @@ Database.prototype.getWeight = function(hash)
 }
 
 /**
- * Put branchHash of block in database
+ * Put branch of block in database
  * @param {String} hash A block hash
- * @param {String} branchHash The branchHash of a block
+ * @param {String} branch The branch of a block
  */
-Database.prototype.putBranchHash = function(hash, branchHash)
+Database.prototype.putBranch = function(hash, branch)
 {
-  this.db_.put('b' + hash, branchHash, { sync: true }, function(err){
+  this.db_.put('b' + hash, branch, { sync: true }, function(err){
     if (err) console.log(err)
   })
 }
 
 /**
- * Get branchHash of block in database
+ * Get branch of block in database
  * @param {String} hash A block hash
- * @return {Promise} Block branchHash
+ * @return {Promise} Block branch
  */
-Database.prototype.getBranchHash = function(hash)
+Database.prototype.getBranch = function(hash)
 {
+  console.log("getBranch " + hash)
   return this.db_.get('b' + hash)
 }
 
 /**
- * Put trunkHash of block in database
+ * Put trunk of block in database
  * @param {String} hash A block hash
- * @param {String} trunkHash The trunkHash of a block
+ * @param {String} trunk The trunk of a block
  */
-Database.prototype.putTrunkHash = function(hash, trunkHash)
+Database.prototype.putTrunk = function(hash, trunk)
 {
-  this.db_.put('t' + hash, trunkHash, { sync: true }, function(err){
+  this.db_.put('t' + hash, trunk, { sync: true }, function(err){
     if (err) console.log(err)
   })
 }
 
 /**
- * Get trunkHash of block in database
+ * Get trunk of block in database
  * @param {String} hash A block hash
- * @return {Promise} Block trunkHash
+ * @return {Promise} Block trunk
  */
-Database.prototype.getTrunkHash = function(hash)
+Database.prototype.getTrunk = function(hash)
 {
+  console.log("getTrunk")
   return this.db_.get('t' + hash)
 }
 

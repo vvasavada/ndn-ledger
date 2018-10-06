@@ -20,7 +20,7 @@ Tangle.prototype.populate = function(){
     this.db_ = new Database()
 
     /* Attach genesis */
-    var genesis = new Block('genesisBlock', genesis=true)
+    var genesis = new Block('iota', 'genesisBlock', genesis=true)
     this.genesisHash_ = genesis.getHash()
 
     this.db_.putBlock(this.genesisHash_, genesis)
@@ -48,12 +48,12 @@ Tangle.prototype.populate = function(){
 /**
  * Update Approvers
  */
-Tangle.prototype.updateApprovers = function(approveeHash, approverHash)
+Tangle.prototype.updateApprovers = function(approveeHash, approver)
 {
   approversFunc = this.db_.getApprovers(approveeHash)
   approversFunc.then(function(approvers){
     approvers = [...approvers]
-    approvers.push(approverHash)
+    approvers.push(approver)
     tangle.db_.putApprovers(approveeHash, approvers)
   })
 }
@@ -80,17 +80,19 @@ Tangle.prototype.updateWeights = async function(hash, visited)
   if (hash == this.genesisHash_){
     return
   }
-  
-  branchCurrent = await this.db_.getBranchHash(hash)
+ 
+  branchCurrent = await this.db_.getBranch(hash)
   if (!(branchCurrent in visited)){
-    this.updateWeight(branchCurrent)
-    this.updateWeights(branchCurrent, visited)
+    branchHash = branchCurrent.split("/")[2]
+    this.updateWeight(branchHash)
+    this.updateWeights(branchHash, visited)
   }
 
-  trunkCurrent = await this.db_.getTrunkHash(hash)
+  trunkCurrent = await this.db_.getTrunk(hash)
   if (trunkCurrent != branchCurrent && !(trunkCurrent in visited)){
-    this.updateWeight(trunkCurrent)
-    this.updateWeights(trunkCurrent, visited)
+    trunkHash = trunkCurrent.split("/")[2]
+    this.updateWeight(trunkHash)
+    this.updateWeights(trunkHash, visited)
   }
 }
 
@@ -106,7 +108,7 @@ tipSelection = async function(db, genesisHash, tips)
     approvers = [...approvers.toString().split(',')]
     weights = []
     approvers.forEach(function(approver){
-      weights.push(db.getWeight(approver))
+      weights.push(db.getWeight(approver.split("/")[2]))
     });
 
     selectedApprover = null
@@ -138,6 +140,10 @@ tipSelection = async function(db, genesisHash, tips)
     current = selectedApprover
   }
 
+  if (current == genesisHash) {
+    current = "/iota/" + genesisHash;
+  }
+
   return current
 }
 
@@ -163,32 +169,39 @@ Tangle.prototype.attach = async function(block)
   this.db_.putWeight(hash, 1)
   this.db_.putApprovers(hash, [])
 
-  var branchHash = null
-  var trunkHash = null
+  var branch = null
+  var trunk = null
 
   /** If block was produced by this node */
-  if (!(block.branchHash || block.trunkHash)){
+  if (!(block.branch || block.trunk)){
     /**
       * Tip selection
       * We perform MC random walk from genesis to tips
       * Probability of node i being chosen = W_i/W_total
       */
-    branchHash = await tipSelection(this.db_, this.genesisHash_, this.tips_)
-    trunkHash = await tipSelection(this.db_, this.genesisHash_, this.tips_)
+    branch = await tipSelection(this.db_, this.genesisHash_, this.tips_)
+    trunk = await tipSelection(this.db_, this.genesisHash_, this.tips_)
   } else {
-    branchHash = block.branchHash
-    trunkHash = block.trunkHash
+    branch = block.branch
+    trunk = block.trunk
   }
+
+  this.db_.putBranch(hash, branch)
+  this.db_.putTrunk(hash, trunk)
 
   /**
     * Update these branch and trunk
     */
+  branchHash = branch.split("/")[2]
   this.updateWeight(branchHash)
-  this.updateApprovers(branchHash, hash)
+  this.updateWeights(branchHash, [])
+  this.updateApprovers(branchHash, block.getName())
 
-  if (branchHash != trunkHash){
-    this.updateWeight(branchHash)
-    this.updateApprovers(branchHash, hash)
+  trunkHash = trunk.split("/")[2]
+  if (branch != trunk){
+    this.updateWeight(trunkHash)
+    this.updateWeights(trunkHash, [])
+    this.updateApprovers(trunkHash, block.getName())
   }
 
   this.tips_.push(hash)
@@ -202,10 +215,6 @@ Tangle.prototype.attach = async function(block)
 
   details = [this.genesisHash_].concat(this.tips_)
   this.db_.putStartupDetails(details)
-
-  this.db_.putBranchHash(hash, branchHash)
-  this.db_.putTrunkHash(hash, trunkHash)
-  console.log(this.tips_)
 }
 
 /**
@@ -217,8 +226,6 @@ Tangle.prototype.attach = async function(block)
 Tangle.prototype.fetch = async function(hash)
 {
   block = await this.db_.getBlock(hash)
-  //branchHash = await this.db_.getBranchHash(hash)
-  //trunkHash = await this.db_.getTrunkHash(hash)
   
   return block
 }
