@@ -35,16 +35,10 @@ var onData = function(interest, data) {
   if (!(name.toUri().startsWith("/" + common.multi_pref))){
     blockData = [...data.getContent().buf().toString().split(',')]
     /* Block data received consists of an array with:
-     *  - hash
-     *  - content
-     *  - branchHash
-     *  - trunkHash
+     *  - Block
      *  - Tips*
      */
-    hash = blockData[0]
-    content = blockData[1]
-    branchHash = blockData[2]
-    trunkHash = blockData[3]
+    console.log(blockData[0])
     tips = blockData.slice(start=4)
     
     /* Before attaching this new block to tangle, we need to sync */
