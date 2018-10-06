@@ -8,12 +8,8 @@ var Crypto = require('crypto')
  * @param {Data} data An object of Data paired with interest to be attached to a block
  */
 
-var Block = function Block(interest, data)
+var Block = function Block(content, genesis=false)
 {
-  if (interest == undefined && data == undefined) return
-  
-  console.log("Creating block for Interest/Data: " + interest.getName())
-
   /* Block contains following information:
    * Block hash  | Unique hash identifying this block
    * Branch block  | Block being approved
@@ -21,17 +17,21 @@ var Block = function Block(interest, data)
    * Content  | Interest/Data name followed by Data content
    * */
 
-  interestNameUri = interest.getName().toUri()
-
   /* Create Block content Blob */
-  this.content_ = new Blob(interestNameUri + ";" + data.getContent().buf().toString())
+  this.content_ = new Blob(content)
 
   /* Create Block Hash
    * Block hash is created by taking SHA256 hash of
    * Interest/Data name and current timestamp
    */
-  this.hash_ =  Crypto.createHash('sha256').update(interestNameUri +
-                                                   new Date().toISOString()).digest('hex')
+  if (!(genesis)){
+    this.hash_ =  Crypto.createHash('sha256').update(content + 
+      new Date().toISOString()).digest('hex');
+  } else {
+    this.hash_ = Crypto.createHash('sha256').update(content).digest('hex')
+  }
+
+  console.log("Created block: " + this.hash_)
 
   /* branchHash and trunkHash are initially null
    * Tangle.attach() runs tip selection and sets them

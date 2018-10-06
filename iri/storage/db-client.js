@@ -12,11 +12,12 @@ var Database = function()
 {
   /* Create LevelDb instance 
    * The key namespace will be:
-   * 'c' + block_hash for content column family
+   * 'e' + block_hash for entire block column family
    * 'a' + block_hash for approver column family
    * 'w' + block_hash for weight column family
    * 'b' + block_hash for branchHash column family
    * 't' + block_hash for trunkHash column family
+   * 'startup' for startup column family
    * */
   dbNoPromise = multilevel.client();
   var server = net.connect(3000);
@@ -30,11 +31,11 @@ var Database = function()
 /**
  * Put content of block in database
  * @param {String} hash A block hash
- * @param {String} content A block contents
+ * @param {String} block A block
  */
-Database.prototype.putContent = function(hash, content)
+Database.prototype.putBlock = function(hash, block)
 {
-  this.db_.put('c' + hash, content, { sync: true }, function(err){
+  this.db_.put('e' + hash, block, { sync: true }, function(err){
     if (err) console.log(err)
   })
 }
@@ -42,11 +43,11 @@ Database.prototype.putContent = function(hash, content)
 /**
  * Get content of block from database
  * @param {String} hash A block hash
- * @return {Promise} Block contents
+ * @return {Promise} Block
  */
-Database.prototype.getContent = function(hash)
+Database.prototype.getBlock = function(hash)
 {
-  return this.db_.get('c' + hash)
+  return this.db_.get('e' + hash)
 }
 
 /**

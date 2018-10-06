@@ -93,11 +93,7 @@ var ensureTangleIsReady = function(){
 var generateBlock = async function() {
   /* create random interest and data pair */
   let r = Math.random().toString(36).substring(7)
-  name = new Name(common.local_pref)
-  name.append(r)
-  interest = new Interest(name)
-  data = new Data(name, r)
-  block = new Block(interest, data)
+  block = new Block(r)
   await ensureTangleIsReady()
   await tangle.attach(block)
   return block.getHash();

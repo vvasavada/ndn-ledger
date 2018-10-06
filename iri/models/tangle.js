@@ -1,6 +1,8 @@
 var Database = require('../..').Database
+var Block = require('../..').Block
 var Crypto = require('crypto')
 var fs = require('fs')
+
 
 /**
  * This class represents Tangle. 
@@ -18,9 +20,10 @@ Tangle.prototype.populate = function(){
     this.db_ = new Database()
 
     /* Attach genesis */
-    this.genesisHash_ =  Crypto.createHash('sha256').update('genesisBlockOfTangle').digest('hex')
+    var genesis = new Block('genesisBlock', genesis=true)
+    this.genesisHash_ = genesis.getHash()
 
-    this.db_.putContent(this.genesisHash_, '')
+    this.db_.putBlock(this.genesisHash_, genesis)
     this.db_.putWeight(this.genesisHash_, 1)
     this.db_.putApprovers(this.genesisHash_, [])
     
@@ -156,7 +159,7 @@ Tangle.prototype.attach = async function(block)
 {
   hash = block.getHash()
 
-  this.db_.putContent(hash, block.getContent().buf().toString())
+  this.db_.putBlock(hash, block)
   this.db_.putWeight(hash, 1)
   this.db_.putApprovers(hash, [])
 
@@ -213,11 +216,11 @@ Tangle.prototype.attach = async function(block)
  */
 Tangle.prototype.fetch = async function(hash)
 {
-  content = await this.db_.getContent(hash)
-  branchHash = await this.db_.getBranchHash(hash)
-  trunkHash = await this.db_.getTrunkHash(hash)
+  block = await this.db_.getBlock(hash)
+  //branchHash = await this.db_.getBranchHash(hash)
+  //trunkHash = await this.db_.getTrunkHash(hash)
   
-  return [ content, branchHash, trunkHash ]
+  return block
 }
 
 /**
