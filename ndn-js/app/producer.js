@@ -156,8 +156,7 @@ Echo.prototype.onInterest = async function(prefix, interest, face, interestFilte
     }
   } else if (name.toUri().startsWith("/" + common.local_pref)){
       hash = res[2]
-      blockData = await tangle.fetch(hash)
-      blockData.unshift(hash)
+      block = await tangle.fetch(hash)
       /* blockData will be:
       *  - hash
       *  - content
@@ -166,7 +165,7 @@ Echo.prototype.onInterest = async function(prefix, interest, face, interestFilte
       *  - tips*
       */
       tips = await tangle.getTips()
-      blockData = blockData.concat(tips)
+      blockData = [block].concat(tips)
       content = blockData
   }
 
