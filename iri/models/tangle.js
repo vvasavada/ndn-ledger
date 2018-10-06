@@ -8,13 +8,15 @@ var fs = require('fs')
 
 var Tangle = function Tangle()
 {
-  this.db_ =  new Database()
+  this.db_ =  null
   this.tips_ = null
   this.genesisHash_ = null
 }
 
 Tangle.prototype.populate = function(){
   if (!(fs.existsSync('database'))){
+    this.db_ = new Database()
+
     /* Attach genesis */
     this.genesisHash_ =  Crypto.createHash('sha256').update('genesisBlockOfTangle').digest('hex')
 
@@ -29,6 +31,8 @@ Tangle.prototype.populate = function(){
     startupDetails = [this.genesisHash_, this.genesisHash_]
     this.db_.putStartupDetails(startupDetails)
   } else {
+    this.db_ = new Database()
+
     startupDetailsFunc = this.db_.getStartupDetails()
     startupDetailsFunc.then(function(startupDetails){
       startupDetails = [...startupDetails.toString().split(',')]
@@ -134,6 +138,15 @@ tipSelection = async function(db, genesisHash, tips)
   return current
 }
 
+/** Sync the Tangle
+ * @param {Array} tips Tips received
+ */
+Tangle.prototype.sync = function(receivedTips)
+{
+  var receivedSet = new Set(receivedTips)
+
+}
+
 /**
  * Attach block to the Tangle, that is,
  * write it to leveldb
@@ -216,6 +229,14 @@ Tangle.prototype.getTips = async function()
   tips = await this.db_.getStartupDetails()
   tips = [...tips.toString().split(',')].slice(1)
   return tips
+}
+
+/**
+ * Close Database connection
+ */
+Tangle.prototype.close = function()
+{
+  this.db_.close();
 }
 
 tangle = new Tangle()

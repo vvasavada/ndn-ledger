@@ -52,11 +52,13 @@ var onData = function(interest, data) {
   }
   
 
+  tangle.close();
   face.close();  // This will cause the script to quit.
 };
 
 var onTimeout = function(interest) {
   console.log("Time out for interest " + interest.getName().toUri());
+  tangle.close();
   face.close();  // This will cause the script to quit.
 };
 
