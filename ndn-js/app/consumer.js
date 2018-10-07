@@ -27,25 +27,68 @@ var common = require('..').Common
 var Block = require('../..').Block
 var tangle = require('../..').tangle
 
+pendingAttaches = []
+getCounter = 0
+
 var onData = function(interest, data) {
   name = data.getName()
   console.log("Got data packet with name " + name.toUri());
 
   /** if this is a block i.e. reply to Get Bundle request */
   if (!(name.toUri().startsWith("/" + common.multi_pref))){
+    getCounter -= 1
     blockData = [...data.getContent().buf().toString().split(',')]
     /* Block data received consists of an array with:
      *  - Block
      *  - Tips*
      */
-    console.log(blockData[0])
+    block = blockData[0]
     tips = blockData.slice(start=4)
-    
-    /* Before attaching this new block to tangle, we need to sync */
 
+    if (tips){
+
+      /* Before attaching this new block to tangle, we need to sync */
+      missingTips = tangle.getMissingTips(tips)
+      missingTips.splice(missingTips.indexOf(block.getName()), 1)
+
+      missingTips.forEach(function(tip){
+        pref = tip.split(',')[1]
+        hash = tip.splot(',')[2]
+        get(pref, hash)
+        getCounter += 1
+      });
+    }
+
+
+    /* Add block to list of pending attaches */
+    pendingAttaches.unshift(block)
+
+    /* Check in branch and trunk are in Tangle or retrieve them */
+    var branch = block.getBranch()
+    var branchPref = branch.split("/")[1]
+    var branchHash = branch.split("/")[2]
+
+    var trunk = block.getTrunk()
+    var trunkPref = trunk.split("/")[1]
+    var trunkHash = trunk.split("/")[2]
+
+    if (!(tangle.inTangle(branchHash))){
+      get(branchPref, branchHash)
+      getCounter += 1
+    }
+
+    if (branch != trunk && !(tangle.inTangle(trunkHash))){
+      get(trunkPref, trunkHash)
+      getCounter += 1
+    }
+  }
+
+  if (!(getCounter)){
+    pendingAttaches.forEach(function(block){
+      tangle.attach(block)
+    });
   }
   
-
   tangle.close();
   face.close();  // This will cause the script to quit.
 };
@@ -101,6 +144,7 @@ function main(){
     });
   } else if (arg == "GET_BUNDLE") {
     get(process.argv[3], process.argv[4]);
+    getCounter += 1
   }
 }
 

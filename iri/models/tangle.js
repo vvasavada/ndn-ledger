@@ -28,10 +28,10 @@ Tangle.prototype.populate = function(){
     this.db_.putApprovers(this.genesisHash_, [])
     
     /* Initialize tips */
-    this.tips_ = [ this.genesisHash_ ]
+    this.tips_ = [ genesis.getName() ]
 
     // Startup details are [genesisHash, Tips*]
-    startupDetails = [this.genesisHash_, this.genesisHash_]
+    startupDetails = [this.genesisHash_, genesis.getName() ]
     this.db_.putStartupDetails(startupDetails)
   } else {
     this.db_ = new Database()
@@ -100,9 +100,9 @@ Tangle.prototype.updateWeights = async function(hash, visited)
  * Tip Selection Algorithm
  * @return {String} Hash of selected tip
  */
-tipSelection = async function(db, genesisHash, tips)
+tipSelection = async function(db, genesis, tips)
 {
-  current = genesisHash
+  current = genesis
   while (!(tips.includes(current))){
     approvers = await db.getApprovers(current)
     approvers = [...approvers.toString().split(',')]
@@ -140,20 +140,37 @@ tipSelection = async function(db, genesisHash, tips)
     current = selectedApprover
   }
 
-  if (current == genesisHash) {
-    current = "/iota/" + genesisHash;
+  return current
+}
+
+/** Check if block in Tangle
+ * param {String} hash Check if hash is in tangle
+ * return {Boolean} return True if block is in Tangle
+ */
+Tangle.prototype.inTangle = function(hash)
+{
+  try{
+    this.db_.getBlock(hash);
+  } catch (error) {
+      if (error.notFound) {
+        return false
+      }
+    throw error
   }
 
-  return current
+  return true
 }
 
 /** Sync the Tangle
  * @param {Array} tips Tips received
  */
-Tangle.prototype.sync = function(receivedTips)
+Tangle.prototype.getMissingTips = function(receivedTips)
 {
   var receivedSet = new Set(receivedTips)
+  var mySet = new Set(this.tips_)
 
+  var missingSet = receivedSet.difference(mySet)
+  return missingSet
 }
 
 /**
@@ -179,8 +196,9 @@ Tangle.prototype.attach = async function(block)
       * We perform MC random walk from genesis to tips
       * Probability of node i being chosen = W_i/W_total
       */
-    branch = await tipSelection(this.db_, this.genesisHash_, this.tips_)
-    trunk = await tipSelection(this.db_, this.genesisHash_, this.tips_)
+    genesis = "/iota/" + this.genesisHash_
+    branch = await tipSelection(this.db_, genesis, this.tips_)
+    trunk = await tipSelection(this.db_, genesis, this.tips_)
   } else {
     branch = block.branch
     trunk = block.trunk
@@ -204,13 +222,13 @@ Tangle.prototype.attach = async function(block)
     this.updateApprovers(trunkHash, block.getName())
   }
 
-  this.tips_.push(hash)
-  if (this.tips_.includes(branchHash)){
-    this.tips_.splice(this.tips_.indexOf(branchHash), 1);
+  this.tips_.push(block.getName())
+  if (this.tips_.includes(branch)){
+    this.tips_.splice(this.tips_.indexOf(branch), 1);
   }
 
-  if (this.tips_.includes(trunkHash)){
-    this.tips_.splice(this.tips_.indexOf(trunkHash), 1);
+  if (this.tips_.includes(trunk)){
+    this.tips_.splice(this.tips_.indexOf(trunk), 1);
   }
 
   details = [this.genesisHash_].concat(this.tips_)
@@ -238,6 +256,7 @@ Tangle.prototype.getTips = async function()
 {
   tips = await this.db_.getStartupDetails()
   tips = [...tips.toString().split(',')].slice(1)
+  this.tips_ = tips
   return tips
 }
 
