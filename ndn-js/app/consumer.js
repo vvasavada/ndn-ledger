@@ -87,6 +87,8 @@ var onData = function(interest, data) {
     pendingAttaches.forEach(function(block){
       tangle.attach(block)
     });
+
+    pendingAttaches = [];
   }
   
   tangle.close();
