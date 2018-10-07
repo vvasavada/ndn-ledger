@@ -166,11 +166,7 @@ Tangle.prototype.inTangle = function(hash)
  */
 Tangle.prototype.getMissingTips = function(receivedTips)
 {
-  var receivedSet = new Set(receivedTips)
-  var mySet = new Set(this.tips_)
-
-  var missingSet = receivedSet.difference(mySet)
-  return missingSet
+  return receivedTips.filter(function(x) { return this.tips_.indexOf(x) < 0 })
 }
 
 /**

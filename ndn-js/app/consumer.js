@@ -33,9 +33,8 @@ getCounter = 0
 var onData = function(interest, data) {
   name = data.getName()
   console.log("Got data packet with name " + name.toUri());
-
   /** if this is a block i.e. reply to Get Bundle request */
-  if (!(name.toUri().startsWith("/" + common.multi_pref))){
+  if (!(name.toUri().startsWith("/" + common.multicast_pref))){
     getCounter -= 1
     blockData = [...data.getContent().buf().toString().split(',')]
     /* Block data received consists of an array with:
@@ -44,7 +43,8 @@ var onData = function(interest, data) {
      */
     block = blockData[0]
     tips = blockData.slice(start=4)
-
+    console.log(block)
+    console.log(tips)
     if (tips){
 
       /* Before attaching this new block to tangle, we need to sync */
@@ -81,14 +81,14 @@ var onData = function(interest, data) {
       get(trunkPref, trunkHash)
       getCounter += 1
     }
-  }
 
-  if (!(getCounter)){
-    pendingAttaches.forEach(function(block){
-      tangle.attach(block)
-    });
+    if (!(getCounter)){
+      pendingAttaches.forEach(function(block){
+        tangle.attach(block)
+      });
 
-    pendingAttaches = [];
+      pendingAttaches = [];
+    }
   }
   
   tangle.close();

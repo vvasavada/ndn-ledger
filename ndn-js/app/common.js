@@ -1,6 +1,6 @@
 /* Prefix */
 multicast_pref = "iota";
-local_pref = "local";
+local_pref = "node2";
 
 module.exports = {
   multicast_pref,
