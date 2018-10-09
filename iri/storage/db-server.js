@@ -1,9 +1,14 @@
 var multilevel = require('multilevel');
 var net = require('net');
 var level = require('level');
+var fs = require('fs');
 
-var db = level('database');
+exports.dbExists = fs.existsSync('database');
 
-net.createServer(function (con) {
-  con.pipe(multilevel.server(db)).pipe(con);
-}).listen(3000);
+if (require.main === module){
+  var db = level('database');
+
+  net.createServer(function (con) {
+    con.pipe(multilevel.server(db)).pipe(con);
+  }).listen(3000);
+}

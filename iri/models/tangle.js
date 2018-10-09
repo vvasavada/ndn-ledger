@@ -1,7 +1,7 @@
 var Database = require('../..').Database
 var Block = require('../..').Block
 var Crypto = require('crypto')
-var fs = require('fs')
+var dbExists = require('../..').dbExists
 
 
 /**
@@ -16,14 +16,14 @@ var Tangle = function Tangle()
 }
 
 Tangle.prototype.populate = function(){
-  if (!(fs.existsSync('database'))){
+  if (!(dbExists)){
     this.db_ = new Database()
 
     /* Attach genesis */
     var genesis = new Block('iota', 'genesisBlock', genesis=true)
     this.genesisHash_ = genesis.getHash()
 
-    this.db_.putBlock(this.genesisHash_, genesis)
+    this.db_.putBlock(this.genesisHash_, JSON.stringify(genesis))
     this.db_.putWeight(this.genesisHash_, 1)
     this.db_.putApprovers(this.genesisHash_, [])
     
@@ -35,7 +35,6 @@ Tangle.prototype.populate = function(){
     this.db_.putStartupDetails(startupDetails)
   } else {
     this.db_ = new Database()
-
     startupDetailsFunc = this.db_.getStartupDetails()
     startupDetailsFunc.then(function(startupDetails){
       startupDetails = [...startupDetails.toString().split(',')]
@@ -104,6 +103,7 @@ tipSelection = async function(db, genesis, tips)
 {
   current = genesis
   while (!(tips.includes(current))){
+    if (current == genesis) current = current.split("/")[2]
     approvers = await db.getApprovers(current)
     approvers = [...approvers.toString().split(',')]
     weights = []
@@ -178,7 +178,6 @@ Tangle.prototype.attach = async function(block)
 {
   hash = block.getHash()
 
-  this.db_.putBlock(hash, block)
   this.db_.putWeight(hash, 1)
   this.db_.putApprovers(hash, [])
 
@@ -200,9 +199,15 @@ Tangle.prototype.attach = async function(block)
     trunk = block.trunk
   }
 
+  block.setBranch(branch)
+  block.setTrunk(trunk)
+
+  this.db_.putBlock(hash, JSON.stringify(block))
+
+
   this.db_.putBranch(hash, branch)
   this.db_.putTrunk(hash, trunk)
-
+  
   /**
     * Update these branch and trunk
     */

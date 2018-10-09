@@ -1,4 +1,3 @@
-var Blob = require('../..').ndnjs.Blob
 var Crypto = require('crypto')
 
 /* This class is responsible to create block to be attached to Tangle.
@@ -18,8 +17,8 @@ var Block = function Block(prefix, content, genesis=false)
    * Content  | Interest/Data name followed by Data content
    * */
 
-  /* Create Block content Blob */
-  this.content_ = new Blob(content)
+  /* Create Block content */
+  this.content_ = content
 
   /* Create Block Hash
    * Block hash is created by taking SHA256 hash of
@@ -66,7 +65,7 @@ Block.prototype.setHash = function(hash)
 
 /**
  * Get the Block content
- * @return {Blob} Content of this Block
+ * @return {String} Content of this Block
  */
 Block.prototype.getContent = function()
 {
@@ -79,15 +78,14 @@ Block.prototype.getContent = function()
  */
 Block.prototype.setContent = function(content)
 {
-  blob = new Blob(content);
-  this.content_ = blob
+  this.content_ = content
 }
 
 /**
  * Get the Block branch
  * @return {String} branch of this Block
  */
-Block.prototype.getBranchHash = function()
+Block.prototype.getBranch = function()
 {
   return this.branch_
 }
@@ -96,7 +94,7 @@ Block.prototype.getBranchHash = function()
  * Set the Block branch
  * @param {String} name branch of this Block
  */
-Block.prototype.setBranchHash = function(name)
+Block.prototype.setBranch = function(name)
 {
   this.branch_ = name
 }
@@ -105,7 +103,7 @@ Block.prototype.setBranchHash = function(name)
  * Get the Block trunk
  * @return {String} trunk of this Block
  */
-Block.prototype.getTrunkHash = function()
+Block.prototype.getTrunk = function()
 {
   return this.trunk_
 }
@@ -114,7 +112,7 @@ Block.prototype.getTrunkHash = function()
  * Set the Block trunk
  * @param {String} name Trunk of this Block
  */
-Block.prototype.setTrunkHash = function(name)
+Block.prototype.setTrunk = function(name)
 {
   this.trunk_ = name
 }
@@ -126,4 +124,18 @@ Block.prototype.setTrunkHash = function(name)
 Block.prototype.getName = function()
 {
   return this.name_
+}
+
+/**
+ * Populate Block from JSON
+ * @param {String} json JSON string of Block object
+ */
+Block.prototype.populateFromJson = function(json)
+{
+  parsed = JSON.parse(json)
+  this.name_ = parsed.name
+  this.content_ = parsed.content
+  this.branch_ = parsed.branch
+  this.trunk_ = parsed.trunk
+  this.hash_ = parsed.hash_
 }

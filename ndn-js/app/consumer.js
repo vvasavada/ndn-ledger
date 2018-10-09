@@ -36,15 +36,15 @@ var onData = function(interest, data) {
   /** if this is a block i.e. reply to Get Bundle request */
   if (!(name.toUri().startsWith("/" + common.multicast_pref))){
     getCounter -= 1
-    blockData = [...data.getContent().buf().toString().split(',')]
+    dataStr = data.getContent().buf().toString();
+    blockData = [...dataStr.split(/\,\s?(?![^{]*\})/)]
     /* Block data received consists of an array with:
      *  - Block
      *  - Tips*
      */
-    block = blockData[0]
+    block = new Block()
+    block.populateFromJson(blockData[0])
     tips = blockData.slice(start=4)
-    console.log(block)
-    console.log(tips)
     if (tips){
 
       /* Before attaching this new block to tangle, we need to sync */
