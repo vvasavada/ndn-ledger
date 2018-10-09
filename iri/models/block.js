@@ -133,9 +133,9 @@ Block.prototype.getName = function()
 Block.prototype.populateFromJson = function(json)
 {
   parsed = JSON.parse(json)
-  this.name_ = parsed.name
-  this.content_ = parsed.content
-  this.branch_ = parsed.branch
-  this.trunk_ = parsed.trunk
+  this.name_ = parsed.name_
+  this.content_ = parsed.content_
+  this.branch_ = parsed.branch_
+  this.trunk_ = parsed.trunk_
   this.hash_ = parsed.hash_
 }
