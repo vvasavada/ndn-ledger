@@ -9,6 +9,7 @@ var Crypto = require('crypto')
 
 var Block = function Block(prefix, content, genesis=false)
 {
+  if (prefix == undefined || content == undefined) return
   /* Block contains following information:
    * Block name | /producer/hash
    * Block hash  | Unique hash identifying this block
