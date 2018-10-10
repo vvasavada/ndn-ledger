@@ -8,10 +8,10 @@ var dirpath = __dirname + '/database';
 var targetFiles;
 var dbExists = false;
 if(fs.existsSync(dirpath)){
-  var extension = '.log'
+  var extensions = ['.log', '.ldb']
   files = fs.readdirSync(dirpath);
   targetFiles = files.filter(function(file){
-    return path.extname(file).toLowerCase() === extension;
+    return extensions.includes(path.extname(file).toLowerCase());
   });
 
   targetFiles.forEach(function(file){

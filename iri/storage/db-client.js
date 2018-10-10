@@ -113,7 +113,6 @@ Database.prototype.putBranch = function(hash, branch)
  */
 Database.prototype.getBranch = function(hash)
 {
-  console.log("getBranch " + hash)
   return this.db_.get('b' + hash)
 }
 
@@ -136,7 +135,6 @@ Database.prototype.putTrunk = function(hash, trunk)
  */
 Database.prototype.getTrunk = function(hash)
 {
-  console.log("getTrunk")
   return this.db_.get('t' + hash)
 }
 

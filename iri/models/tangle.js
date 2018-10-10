@@ -44,14 +44,12 @@ Tangle.prototype.populate = function(){
 /**
  * Update Approvers
  */
-Tangle.prototype.updateApprovers = function(approveeHash, approver)
+Tangle.prototype.updateApprovers = async function(approveeHash, approver)
 {
-  approversFunc = this.db_.getApprovers(approveeHash)
-  approversFunc.then(function(approvers){
-    approvers = [...approvers]
-    approvers.push(approver)
-    tangle.db_.putApprovers(approveeHash, approvers)
-  })
+  approvers = await this.db_.getApprovers(approveeHash);
+  approvers = [...approvers]
+  approvers.push(approver)
+  tangle.db_.putApprovers(approveeHash, approvers)
 }
 
 /**
@@ -61,9 +59,9 @@ Tangle.prototype.updateWeight = function(hash)
 {
   weightFunc = this.db_.getWeight(hash)
   weightFunc.then(function(weight){
-    weight = weight + 1
+    weight += 1
     tangle.db_.putWeight(hash, weight)
-  })
+  });
 }
 
 /**
@@ -100,7 +98,7 @@ tipSelection = async function(db, genesis, tips)
 {
   current = genesis
   while (!(tips.includes(current))){
-    if (current == genesis) current = current.split("/")[2]
+    current = current.split("/")[2]
     approvers = await db.getApprovers(current)
     approvers = [...approvers.toString().split(',')]
     weights = []
@@ -211,13 +209,13 @@ Tangle.prototype.attach = async function(block)
   branchHash = branch.split("/")[2]
   this.updateWeight(branchHash)
   this.updateWeights(branchHash, [])
-  this.updateApprovers(branchHash, block.getName())
+  await this.updateApprovers(branchHash, block.getName())
 
   trunkHash = trunk.split("/")[2]
   if (branch != trunk){
     this.updateWeight(trunkHash)
     this.updateWeights(trunkHash, [])
-    this.updateApprovers(trunkHash, block.getName())
+    await this.updateApprovers(trunkHash, block.getName())
   }
 
   this.tips_.push(block.getName())
