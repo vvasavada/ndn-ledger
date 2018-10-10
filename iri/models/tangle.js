@@ -182,7 +182,7 @@ Tangle.prototype.attach = async function(block)
   var trunk = null
 
   /** If block was produced by this node */
-  if (!(block.branch || block.trunk)){
+  if (!(block.getBranch() || block.getTrunk())){
     /**
       * Tip selection
       * We perform MC random walk from genesis to tips
@@ -191,13 +191,13 @@ Tangle.prototype.attach = async function(block)
     genesis = "/iota/" + this.genesisHash_
     branch = await tipSelection(this.db_, genesis, this.tips_)
     trunk = await tipSelection(this.db_, genesis, this.tips_)
-  } else {
-    branch = block.branch
-    trunk = block.trunk
-  }
 
-  block.setBranch(branch)
-  block.setTrunk(trunk)
+    block.setBranch(branch)
+    block.setTrunk(trunk)
+  } else {
+    branch = block.getBranch()
+    trunk = block.getTrunk()
+  }
 
   this.db_.putBlock(hash, JSON.stringify(block))
 
