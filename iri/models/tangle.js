@@ -3,7 +3,6 @@ var Block = require('../..').Block
 var Crypto = require('crypto')
 var dbExists = require('../..').dbExists
 
-
 /**
  * This class represents Tangle. 
  */
@@ -16,9 +15,8 @@ var Tangle = function Tangle()
 }
 
 Tangle.prototype.populate = function(){
+  this.db_ = new Database()
   if (!(dbExists)){
-    this.db_ = new Database()
-
     /* Attach genesis */
     var genesis = new Block('iota', 'genesisBlock', genesis=true)
     this.genesisHash_ = genesis.getHash()
@@ -34,7 +32,6 @@ Tangle.prototype.populate = function(){
     startupDetails = [this.genesisHash_, genesis.getName() ]
     this.db_.putStartupDetails(startupDetails)
   } else {
-    this.db_ = new Database()
     startupDetailsFunc = this.db_.getStartupDetails()
     startupDetailsFunc.then(function(startupDetails){
       startupDetails = [...startupDetails.toString().split(',')]
