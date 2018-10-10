@@ -44,7 +44,9 @@ var onData = function(interest, data) {
      */
     block = new Block()
     block.populateFromJson(blockData[0])
-    tips = blockData.slice(start=4)
+    tips = blockData.slice(start=1)
+
+    forwardingHint = name.toUri().split("/")[1]
     if (tips){
 
       /* Before attaching this new block to tangle, we need to sync */
@@ -53,8 +55,8 @@ var onData = function(interest, data) {
 
       missingTips.forEach(function(tip){
         pref = tip.split(',')[1]
-        hash = tip.splot(',')[2]
-        get(pref, hash)
+        hash = tip.split(',')[2]
+        get(pref, hash, forwardingHint)
         getCounter += 1
       });
     }
@@ -112,12 +114,14 @@ var notify = function(blockHash) {
   face.expressInterest(name, onData, onTimeout);
 }
 
-var get = function(notifier_pref, hash) {
+var get = function(notifier_pref, hash, forwardingHint=null) {
   name = new Name(notifier_pref);
   name.append(hash);
   console.log("Interest " + name.toUri());
   console.log("Get Block: " + hash);
-  face.expressInterest(name, onData, onTimeout);
+  interest = new Interest(name)
+  if (forwardingHint) interest.getForwardingHint().add(new Name(forwardingHint));
+  face.expressInterest(interest, onData, onTimeout);
 }
 
 var ensureTangleIsReady = function(){

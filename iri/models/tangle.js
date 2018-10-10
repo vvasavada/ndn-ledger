@@ -161,7 +161,7 @@ Tangle.prototype.inTangle = function(hash)
  */
 Tangle.prototype.getMissingTips = function(receivedTips)
 {
-  return receivedTips.filter(function(x) { return this.tips_.indexOf(x) < 0 })
+  return receivedTips.filter(function(x) { return tangle.tips_.indexOf(x) < 0 })
 }
 
 /**
@@ -172,6 +172,8 @@ Tangle.prototype.getMissingTips = function(receivedTips)
 Tangle.prototype.attach = async function(block)
 {
   hash = block.getHash()
+
+  console.log("Attaching " + hash + " to the tangle");
 
   this.db_.putWeight(hash, 1)
   this.db_.putApprovers(hash, [])
