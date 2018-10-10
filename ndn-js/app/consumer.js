@@ -30,7 +30,7 @@ var tangle = require('../..').tangle
 pendingAttaches = []
 getCounter = 0
 
-var onData = function(interest, data) {
+var onData = async function(interest, data) {
   name = data.getName()
   console.log("Got data packet with name " + name.toUri());
   /** if this is a block i.e. reply to Get Bundle request */
@@ -85,9 +85,9 @@ var onData = function(interest, data) {
     }
 
     if (!(getCounter)){
-      pendingAttaches.forEach(function(block){
-        tangle.attach(block)
-      });
+      for (attachment of pendingAttaches){
+        await tangle.attach(attachment)
+      };
 
       pendingAttaches = [];
     }
