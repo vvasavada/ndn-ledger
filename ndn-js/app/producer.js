@@ -144,14 +144,10 @@ Echo.prototype.onInterest = async function(prefix, interest, face, interestFilte
   if(name.toUri().startsWith("/" + common.multicast_pref)){
     // Send GET Block request only if it wasn't notified by this node
     if (res[2] != common.local_pref){
-      var exec = require('child_process').exec, child;
-      child = exec("node consumer.js GET_BUNDLE " + res[2] + " " + res[3], 
-              function (error, stdout, stderr) {
-                console.log('stdout: ' + stdout);
-                console.log('stderr: ' + stderr);
-                if (error !== null) {
-                  console.log('exec error: ' + error);
-                }
+      var exec = require('child_process').spawn, child;
+      child = exec("node",  ["consumer.js", "GET_BUNDLE", res[2], res[3]]) 
+      child.stdout.on('data', function (data) {
+                console.log('stdout: ' + data);
               });
     }
   } else if (name.toUri().startsWith("/" + common.local_pref)){

@@ -74,12 +74,12 @@ var onData = async function(interest, data) {
     var trunkPref = trunk.split("/")[1]
     var trunkHash = trunk.split("/")[2]
 
-    if (!(tangle.inTangle(branchHash))){
+    if (!(await tangle.inTangle(branchHash))){
       get(branchPref, branchHash)
       getCounter += 1
     }
 
-    if (branch != trunk && !(tangle.inTangle(trunkHash))){
+    if (branch != trunk && !(await tangle.inTangle(trunkHash))){
       get(trunkPref, trunkHash)
       getCounter += 1
     }
@@ -90,11 +90,13 @@ var onData = async function(interest, data) {
       };
 
       pendingAttaches = [];
+      tangle.close();
+      face.close();  // This will cause the script to quit
     }
+  } else{
+    tangle.close();
+    face.close();  // This will cause the script to quit.
   }
-  
-  tangle.close();
-  face.close();  // This will cause the script to quit.
 };
 
 var onTimeout = function(interest) {

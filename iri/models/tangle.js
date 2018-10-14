@@ -142,10 +142,10 @@ tipSelection = async function(db, genesis, tips)
  * param {String} hash Check if hash is in tangle
  * return {Boolean} return True if block is in Tangle
  */
-Tangle.prototype.inTangle = function(hash)
+Tangle.prototype.inTangle = async function(hash)
 {
   try{
-    this.db_.getBlock(hash);
+    await this.db_.getBlock(hash);
   } catch (error) {
       if (error.notFound) {
         return false
