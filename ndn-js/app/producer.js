@@ -201,7 +201,7 @@ function main()
   face.setCommandSigningInfo(keyChain, keyChain.getDefaultCertificateName());
 
   var echo = new Echo(keyChain, face);
-  var multicast_pref = new Name("/iota");
+  var multicast_pref = new Name(common.multicast_pref);
   var local_pref = new Name(common.local_pref);
   console.log("Register multicast prefix " + multicast_pref.toUri());
   console.log("Register local prefix " + local_pref.toUri());

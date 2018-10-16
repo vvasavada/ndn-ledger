@@ -18,7 +18,7 @@ Tangle.prototype.populate = function(){
   this.db_ = new Database()
   if (!(dbExists)){
     /* Attach genesis */
-    var genesis = new Block('iota', 'genesisBlock', genesis=true)
+    var genesis = new Block('ledger', 'genesisBlock', genesis=true)
     this.genesisHash_ = genesis.getHash()
 
     this.db_.putBlock(this.genesisHash_, JSON.stringify(genesis))
@@ -188,7 +188,7 @@ Tangle.prototype.attach = async function(block)
       * We perform MC random walk from genesis to tips
       * Probability of node i being chosen = W_i/W_total
       */
-    genesis = "/iota/" + this.genesisHash_
+    genesis = "/ledger-multicast/" + this.genesisHash_
     branch = await tipSelection(this.db_, genesis, this.tips_)
     trunk = await tipSelection(this.db_, genesis, this.tips_)
 
