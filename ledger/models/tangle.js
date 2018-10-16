@@ -97,8 +97,6 @@ Tangle.prototype.updateWeights = async function(hash, visited)
 tipSelection = async function(db, genesis, tips)
 {
   current = genesis
-  console.log(current)
-  console.log(tips)
   while (!(tips.includes(current))){
     current = current.split("/")[2]
     approvers = await db.getApprovers(current)
