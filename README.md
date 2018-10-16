@@ -1,2 +1,2 @@
-# ndn-iota
-Developing Tangle over NDN network
+# ndn-ledger
+Developing Distributed Ledger over NDN network
