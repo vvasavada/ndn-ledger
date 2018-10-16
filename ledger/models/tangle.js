@@ -97,6 +97,8 @@ Tangle.prototype.updateWeights = async function(hash, visited)
 tipSelection = async function(db, genesis, tips)
 {
   current = genesis
+  console.log(current)
+  console.log(tips)
   while (!(tips.includes(current))){
     current = current.split("/")[2]
     approvers = await db.getApprovers(current)
@@ -188,7 +190,7 @@ Tangle.prototype.attach = async function(block)
       * We perform MC random walk from genesis to tips
       * Probability of node i being chosen = W_i/W_total
       */
-    genesis = "/ledger-multicast/" + this.genesisHash_
+    genesis = "/ledger/" + this.genesisHash_
     branch = await tipSelection(this.db_, genesis, this.tips_)
     trunk = await tipSelection(this.db_, genesis, this.tips_)
 
