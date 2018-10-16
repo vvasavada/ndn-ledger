@@ -47,7 +47,7 @@ Tangle.prototype.populate = function(){
 Tangle.prototype.updateApprovers = async function(approveeHash, approver)
 {
   approvers = await this.db_.getApprovers(approveeHash);
-  approvers = [...approvers]
+  approvers = [...approvers.toString().split(',').filter((val)=>val)]
   approvers.push(approver)
   tangle.db_.putApprovers(approveeHash, approvers)
 }
