@@ -25,8 +25,8 @@ Note: The following installation instructions are only for linux/ubuntu users. W
 
 You need to install following packages/softwares to before checking out the code and get it running.
 
-- Node.js v6+
-- Named Data Networking Forwarding Daemon v0.6.4
+- Node.js v6+ (https://nodejs.org/en/download/package-manager/#debian-and-ubuntu-based-linux-distributions)
+- Named Data Networking Forwarding Daemon v0.6.4 (https://named-data.net/doc/NFD/current/INSTALL.html)
 
 ##### Installing ndn-ledger
 
