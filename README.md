@@ -5,8 +5,11 @@ This repository contains proof of concept code for Operant Solar's Distributed L
 ### People
 
 Vishrant Vasavada, MS, UCLA
+
 Zhiyi Zhang, PhD, UCLA
+
 Randy King, CEO, Operant Solar
+
 Lixia Zhang, Professor, UCLA
 
 ### Structure
