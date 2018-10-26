@@ -110,6 +110,7 @@ var face = new Face(new UnixTransport());
 
 var notify = function(blockHash) {
   name = new Name(common.multicast_pref);
+  name.append("notif");
   name.append(common.local_pref);
   name.append(blockHash);
   console.log("Notification Interest " + name.toUri());

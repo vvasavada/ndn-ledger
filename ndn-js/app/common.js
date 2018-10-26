@@ -1,7 +1,7 @@
 var os = require('os')
 
 /* Prefix */
-multicast_pref = "ledger-multicast";
+multicast_pref = "ledger";
 local_pref = os.hostname();
 
 module.exports = {

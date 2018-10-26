@@ -141,17 +141,20 @@ Repository.prototype.onInterest = async function(prefix, interest, face, interes
   var data = new Data(name);
   var content = [];
   var res = name.toUri().split("/");
-  if(name.toUri().startsWith("/" + common.multicast_pref)){
-    // Send GET Block request only if it wasn't notified by this node
-    if (res[2] != common.local_pref){
+  console.log(res)
+  if(res[2] == "notif"){ // res in this case will be: ['', ledger, notif, producer-prefix, hash]
+    // Send Get Block request only if it wasn't notified by this node
+    console.log(res[3])
+    console.log(common.local_pref)
+    if (res[3] != common.local_pref){
       var exec = require('child_process').spawn, child;
-      child = exec("node",  ["client.js", "GET_BLOCK", res[2], res[3]]) 
+      child = exec("node",  ["client.js", "GET_BLOCK", res[3], res[4]]) 
       child.stdout.on('data', function (data) {
                 console.log('stdout: ' + data);
               });
     }
-  } else if (name.toUri().startsWith("/" + common.local_pref)){
-      hash = res[2]
+  } else { // res in this case will be: ['', ledger, producer-prefix, hash]
+      hash = res[3]
       block = await tangle.fetch(hash)
       /* blockData will be:
       *  - hash
