@@ -1,7 +1,10 @@
 var Database = require('../..').Database
-var Block = require('../..').Block
+var DataContent = require('../..').DataContent
 var Crypto = require('crypto')
 var dbExists = require('../..').dbExists
+var Data = require('../..').ndnjs.Data
+var Name = require('../..').ndnjs.Name;
+var EncodingUtils = require('../..').ndnjs.EncodingUtils;
 
 /**
  * This class represents Tangle. 
@@ -18,18 +21,28 @@ Tangle.prototype.populate = function(){
   this.db_ = new Database()
   if (!(dbExists)){
     /* Attach genesis */
-    var genesis = new Block('ledger', 'genesisBlock', genesis=true)
-    this.genesisHash_ = genesis.getHash()
 
-    this.db_.putBlock(this.genesisHash_, JSON.stringify(genesis))
+    var genesisContent = new DataContent('genesisBlock');
+    this.genesisHash_ = Crypto.createHash('sha256').update('genesisBlock').digest('hex');
+    
+    var name = new Name('ledger');
+    name.append('ledger');
+    name.append(this.genesisHash_);
+
+    var genesis = new Data(name)
+    console.log('Created Block: ' + name.toUri());
+    genesis.setContent(JSON.stringify(genesisContent));
+
+    this.db_.putBlock(this.genesisHash_, EncodingUtils.encodeToHexData(genesis));
     this.db_.putWeight(this.genesisHash_, 1)
     this.db_.putApprovers(this.genesisHash_, [])
     
     /* Initialize tips */
-    this.tips_ = [ genesis.getName() ]
+    let genesisName = name.toUri();
+    this.tips_ = [ genesisName ]
 
     // Startup details are [genesisHash, Tips*]
-    startupDetails = [this.genesisHash_, genesis.getName() ]
+    startupDetails = [this.genesisHash_, genesisName ]
     this.db_.putStartupDetails(startupDetails)
   } else {
     startupDetailsFunc = this.db_.getStartupDetails()
@@ -77,14 +90,14 @@ Tangle.prototype.updateWeights = async function(hash, visited)
  
   branchCurrent = await this.db_.getBranch(hash)
   if (!(branchCurrent in visited)){
-    branchHash = branchCurrent.split("/")[2]
+    branchHash = branchCurrent.split("/")[3]
     this.updateWeight(branchHash)
     this.updateWeights(branchHash, visited)
   }
 
   trunkCurrent = await this.db_.getTrunk(hash)
   if (trunkCurrent != branchCurrent && !(trunkCurrent in visited)){
-    trunkHash = trunkCurrent.split("/")[2]
+    trunkHash = trunkCurrent.split("/")[3]
     this.updateWeight(trunkHash)
     this.updateWeights(trunkHash, visited)
   }
@@ -98,12 +111,12 @@ tipSelection = async function(db, genesis, tips)
 {
   current = genesis
   while (!(tips.includes(current))){
-    current = current.split("/")[2]
+    current = current.split("/")[3]
     approvers = await db.getApprovers(current)
     approvers = [...approvers.toString().split(',')]
     weights = []
     approvers.forEach(function(approver){
-      weights.push(db.getWeight(approver.split("/")[2]))
+      weights.push(db.getWeight(approver.split("/")[3]))
     });
 
     selectedApprover = null
@@ -167,11 +180,14 @@ Tangle.prototype.getMissingTips = function(receivedTips)
 /**
  * Attach block to the Tangle, that is,
  * write it to leveldb
- * @param {Block} block The block to be attached
+ * @param {Data} block The block to be attached
  */
 Tangle.prototype.attach = async function(block)
 {
-  hash = block.getHash()
+  let blockName = block.getName().toUri();
+  hash = blockName.split('/')[3]; 
+  dataContent = new DataContent();
+  dataContent.populateFromJson(block.getContent().toString());
 
   console.log("Attaching " + hash + " to the tangle");
 
@@ -182,24 +198,24 @@ Tangle.prototype.attach = async function(block)
   var trunk = null
 
   /** If block was produced by this node */
-  if (!(block.getBranch() || block.getTrunk())){
+  if (!(dataContent.getBranch() || dataContent.getTrunk())){
     /**
       * Tip selection
       * We perform MC random walk from genesis to tips
       * Probability of node i being chosen = W_i/W_total
       */
-    genesis = "/ledger/" + this.genesisHash_
+    genesis = "/ledger/ledger/" + this.genesisHash_
     branch = await tipSelection(this.db_, genesis, this.tips_)
     trunk = await tipSelection(this.db_, genesis, this.tips_)
 
-    block.setBranch(branch)
-    block.setTrunk(trunk)
+    dataContent.setBranch(branch)
+    dataContent.setTrunk(trunk)
   } else {
-    branch = block.getBranch()
-    trunk = block.getTrunk()
+    branch = dataContent.getBranch()
+    trunk = dataContent.getTrunk()
   }
 
-  this.db_.putBlock(hash, JSON.stringify(block))
+  this.db_.putBlock(hash, EncodingUtils.encodeToHexData(block))
 
 
   this.db_.putBranch(hash, branch)
@@ -208,19 +224,19 @@ Tangle.prototype.attach = async function(block)
   /**
     * Update these branch and trunk
     */
-  branchHash = branch.split("/")[2]
+  branchHash = branch.split("/")[3]
   this.updateWeight(branchHash)
   this.updateWeights(branchHash, [])
-  await this.updateApprovers(branchHash, block.getName())
+  await this.updateApprovers(branchHash, blockName)
 
-  trunkHash = trunk.split("/")[2]
+  trunkHash = trunk.split("/")[3]
   if (branch != trunk){
     this.updateWeight(trunkHash)
     this.updateWeights(trunkHash, [])
-    await this.updateApprovers(trunkHash, block.getName())
+    await this.updateApprovers(trunkHash, blockName)
   }
 
-  this.tips_.push(block.getName())
+  this.tips_.push(blockName)
   if (this.tips_.includes(branch)){
     this.tips_.splice(this.tips_.indexOf(branch), 1);
   }
@@ -242,7 +258,7 @@ Tangle.prototype.attach = async function(block)
 Tangle.prototype.fetch = async function(hash)
 {
   block = await this.db_.getBlock(hash)
-  
+
   return block
 }
 

@@ -23,6 +23,7 @@ var Blob = require('..').Blob;
 var UnixTransport = require('..').UnixTransport;
 var SafeBag = require('..').SafeBag;
 var KeyChain = require('..').KeyChain;
+var EncodingUtils = require('..').EncodingUtils;
 
 var config = require('..').Config;
 var tangle = require('../..').tangle
@@ -130,18 +131,16 @@ var DEFAULT_RSA_PRIVATE_KEY_DER = new Buffer([
     0xcb, 0xea, 0x8f
 ]);
 
-var Repository = function Repository(keyChain, face) {
-	this.keyChain = keyChain;
+var Repository = function Repository(face) {
   this.face = face;
 };
 
 Repository.prototype.onInterest = async function(prefix, interest, face, interestFilterId, filter)
 {
   name = interest.getName();
-  var data = new Data(name);
-  var content = [];
   var res = name.toUri().split("/");
   if(res[2] == "notif"){ // res in this case will be: ['', ledger, notif, producer-prefix, hash]
+
     // Send Get Block request only if it wasn't notified by this node
     if (res[3] != config.local_pref){
       var exec = require('child_process').spawn, child;
@@ -150,6 +149,14 @@ Repository.prototype.onInterest = async function(prefix, interest, face, interes
                 console.log('stdout: ' + data);
               });
     }
+
+    var data = new Data(name);
+    try{
+      face.putData(data);
+    } catch (e) {
+      console.log(e.toString());
+    }
+
   } else { // res in this case will be: ['', ledger, producer-prefix, hash]
       try{
         hash = res[3]
@@ -163,25 +170,10 @@ Repository.prototype.onInterest = async function(prefix, interest, face, interes
                 });
         return
       }
-      /* blockData will be:
-      *  - block
-      *  - tips*
-      */
-      tips = await tangle.getTips()
-      blockData = [block].concat(tips)
-      content = blockData
-  }
 
-  data.setContent(content.join());
-	this.keyChain.sign(data);
-
-  try {
-    console.log("Sent content " + content);
-    face.putData(data);
-  } catch (e) {
-    console.log(e.toString());
+      block = EncodingUtils.decodeHexData(block);
+      face.putData(block);
   }
-  //this.face.close();  // This will cause the script to quit.
 };
 
 Repository.prototype.onRegisterFailed = function(prefix)
@@ -195,10 +187,6 @@ function main()
   // Connect to the local forwarder with a Unix socket.
   var face = new Face(new UnixTransport());
 
-	// For now, when setting face.setCommandSigningInfo, use a key chain with
-  //   a default private key instead of the system default key chain. This
-  //   is OK for now because NFD is configured to skip verification, so it
-  //   ignores the system default key chain.
   var keyChain = new KeyChain("pib-memory:", "tpm-memory:");
   keyChain.importSafeBag(new SafeBag
     (new Name("/testname/KEY/123"),
@@ -206,8 +194,7 @@ function main()
      new Blob(DEFAULT_RSA_PUBLIC_KEY_DER, false)));
 
   face.setCommandSigningInfo(keyChain, keyChain.getDefaultCertificateName());
-
-  var repository = new Repository(keyChain, face);
+  var repository = new Repository(face);
   var multicast_pref = new Name(config.multicast_pref);
   var local_pref = new Name(config.local_pref);
   console.log("Register multicast prefix " + multicast_pref.toUri());

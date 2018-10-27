@@ -24,8 +24,9 @@ var Interest = require('..').Interest;
 var Data = require('..').Data;
 var UnixTransport = require('..').UnixTransport;
 var config = require('..').Config
-var Block = require('../..').Block
+var DataContent = require('../..').DataContent
 var tangle = require('../..').tangle
+var Crypto = require('crypto')
 
 retryDict = {}
 pendingAttaches = []
@@ -34,6 +35,7 @@ getCounter = 0
 var onData = async function(interest, data) {
   name = data.getName()
   console.log("Got data packet with name " + name.toUri());
+  //TODO:: NEED TO UPDATE LOGIC BELOW AFTER NAME CHANGE
   /** if this is a block i.e. reply to Get Bundle request */
   if (!(name.toUri().startsWith("/" + config.multicast_pref))){
     getCounter -= 1
@@ -151,12 +153,23 @@ var ensureTangleIsReady = function(){
 }
 
 var generateBlock = async function() {
-  /* create random interest and data pair */
-  let r = Math.random().toString(36).substring(7)
-  block = new Block(config.local_pref, r)
+  // Generate some random block content
+  let content = Math.random().toString(36).substring(7);
+  let hash_ = Crypto.createHash('sha256').update(content + 
+     new Date().toISOString()).digest('hex');
+
+  name = new Name(config.multicast_pref);
+  name.append(config.local_pref);
+  name.append(hash_);
+  block = new Data(name);
+  console.log("Created block: " + name.toUri());
+
+  dataContent = new DataContent(content);
+  block.setContent(JSON.stringify(dataContent));
+
   await ensureTangleIsReady()
   await tangle.attach(block)
-  return block.getHash();
+  return hash_;
 }
 
 function main(){
