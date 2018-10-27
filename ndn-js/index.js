@@ -1,4 +1,4 @@
-exports.Common = require('./app/common.js');
+exports.Config = require('./app/config.js');
 exports.Face = require('./js/face.js').Face;
 exports.Name = require('./js/name.js').Name;
 exports.ComponentType = require('./js/name.js').ComponentType;

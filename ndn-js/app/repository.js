@@ -24,7 +24,7 @@ var UnixTransport = require('..').UnixTransport;
 var SafeBag = require('..').SafeBag;
 var KeyChain = require('..').KeyChain;
 
-var common = require('..').Common;
+var config = require('..').Config;
 var tangle = require('../..').tangle
 
 var DEFAULT_RSA_PUBLIC_KEY_DER = new Buffer([
@@ -141,12 +141,9 @@ Repository.prototype.onInterest = async function(prefix, interest, face, interes
   var data = new Data(name);
   var content = [];
   var res = name.toUri().split("/");
-  console.log(res)
   if(res[2] == "notif"){ // res in this case will be: ['', ledger, notif, producer-prefix, hash]
     // Send Get Block request only if it wasn't notified by this node
-    console.log(res[3])
-    console.log(common.local_pref)
-    if (res[3] != common.local_pref){
+    if (res[3] != config.local_pref){
       var exec = require('child_process').spawn, child;
       child = exec("node",  ["client.js", "GET_BLOCK", res[3], res[4]]) 
       child.stdout.on('data', function (data) {
@@ -154,13 +151,20 @@ Repository.prototype.onInterest = async function(prefix, interest, face, interes
               });
     }
   } else { // res in this case will be: ['', ledger, producer-prefix, hash]
-      hash = res[3]
-      block = await tangle.fetch(hash)
+      try{
+        hash = res[3]
+        block = await tangle.fetch(hash)
+      } catch (err) {
+        /* We don't have this block either, so broadcast */
+        var exec = require('child_process').spawn, child;
+        child = exec("node", ["client.js", "GET_BLOCK", res[2], res[3]]);
+        child.stdout.on('data', function (data) {
+                  console.log('stdout: ' + data);
+                });
+        return
+      }
       /* blockData will be:
-      *  - hash
-      *  - content
-      *  - branch
-      *  - trunk
+      *  - block
       *  - tips*
       */
       tips = await tangle.getTips()
@@ -204,8 +208,8 @@ function main()
   face.setCommandSigningInfo(keyChain, keyChain.getDefaultCertificateName());
 
   var repository = new Repository(keyChain, face);
-  var multicast_pref = new Name(common.multicast_pref);
-  var local_pref = new Name(common.local_pref);
+  var multicast_pref = new Name(config.multicast_pref);
+  var local_pref = new Name(config.local_pref);
   console.log("Register multicast prefix " + multicast_pref.toUri());
   console.log("Register local prefix " + local_pref.toUri());
   face.registerPrefix
