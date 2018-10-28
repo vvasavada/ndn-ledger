@@ -33,48 +33,27 @@ pendingAttaches = []
 getCounter = 0
 
 var onData = async function(interest, data) {
-  name = data.getName()
-  console.log("Got data packet with name " + name.toUri());
-  //TODO:: NEED TO UPDATE LOGIC BELOW AFTER NAME CHANGE
-  /** if this is a block i.e. reply to Get Bundle request */
-  if (!(name.toUri().startsWith("/" + config.multicast_pref))){
-    getCounter -= 1
-    dataStr = data.getContent().buf().toString();
-    blockData = [...dataStr.split(/\,\s?(?![^{]*\})/)]
-    /* Block data received consists of an array with:
-     *  - Block
-     *  - Tips*
-     */
-    block = new Block()
-    block.populateFromJson(blockData[0])
-    tips = blockData.slice(start=1)
-
-    if (tips){
-
-      /* Before attaching this new block to tangle, we need to sync */
-      missingTips = tangle.getMissingTips(tips)
-      missingTips.splice(missingTips.indexOf(block.getName()), 1)
-
-      missingTips.forEach(function(tip){
-        pref = tip.split(',')[1]
-        hash = tip.split(',')[2]
-        get(pref, hash)
-        getCounter += 1
-      });
-    }
-
+  name = data.getName().toUri();
+  console.log("Got data packet with name " + name);
+  var nameComponents = name.split("/");
+  if (nameComponents[2] != 'notif' && nameComponents[2] != 'sync'){
+    getCounter -= 1;
+    delete retryDict[name];
 
     /* Add block to list of pending attaches */
-    pendingAttaches.unshift(block)
+    pendingAttaches.unshift(data);
 
-    /* Check in branch and trunk are in Tangle or retrieve them */
-    var branch = block.getBranch()
-    var branchPref = branch.split("/")[1]
-    var branchHash = branch.split("/")[2]
+    dataContent = new DataContent();
+    dataContent.populateFromJson(data.getContent().toString());
 
-    var trunk = block.getTrunk()
-    var trunkPref = trunk.split("/")[1]
-    var trunkHash = trunk.split("/")[2]
+    /* Check if branch and trunk are in Tangle or retrieve them */
+    var branch = dataContent.getBranch();
+    var branchPref = branch.split("/")[2];
+    var branchHash = branch.split("/")[3];
+
+    var trunk = dataContent.getTrunk();
+    var trunkPref = trunk.split("/")[2];
+    var trunkHash = trunk.split("/")[3];
 
     if (!(await tangle.inTangle(branchHash))){
       get(branchPref, branchHash)
@@ -96,8 +75,10 @@ var onData = async function(interest, data) {
       face.close();  // This will cause the script to quit
     }
   } else {
-    tangle.close();
-    face.close();  // This will cause the script to quit.
+    if (nameComponents[2] != 'sync'){
+      tangle.close();
+      face.close();  // This will cause the script to quit.
+    }
   }
 };
 
@@ -118,8 +99,37 @@ var onTimeout = function(interest) {
   retryDict[nameUri] = remainingTries - 1;
 };
 
+var retrieveMissing = function(tipsString) {
+  tips = tipsString.match(/\/[^\/]+\/[^\/]+\/[^\/]+/g);
+  if (tips){
+    missingTips = tangle.getMissingTips(tips)
+    missingTips.splice(missingTips.indexOf(block.getName()), 1)
+
+    missingTips.forEach(function(tip){
+      pref = tip.split('/')[2]
+      hash = tip.split('/')[3]
+      get(pref, hash)
+      getCounter += 1
+    });
+  }
+};
+
 // Connect to the local forwarder with a Unix socket.
 var face = new Face(new UnixTransport());
+
+var sync = async function(blockHash){
+  name = new Name(config.multicast_pref);
+  name.append("sync");
+  name.append(config.local_pref);
+  name.append(blockHash);
+
+  tips = await tangle.getTips();
+  tips.forEach(function(tip){
+    name.append(tip);
+  });
+  console.log("Sync Interest " + name.toUri());
+  face.expressInterest(name, onData, onTimeout);
+}
 
 var notify = function(blockHash) {
   name = new Name(config.multicast_pref);
@@ -128,7 +138,6 @@ var notify = function(blockHash) {
   name.append(blockHash);
   console.log("Notification Interest " + name.toUri());
   face.expressInterest(name, onData, onTimeout);
-  retryDict[name.toUri()] = config.num_retries;
 }
 
 var get = function(notifier_pref, hash) {
@@ -167,7 +176,8 @@ var generateBlock = async function() {
   dataContent = new DataContent(content);
   block.setContent(JSON.stringify(dataContent));
 
-  await ensureTangleIsReady()
+  await ensureTangleIsReady();
+  await sync(hash_);
   await tangle.attach(block)
   return hash_;
 }
@@ -179,8 +189,13 @@ function main(){
       notify(blockHash);
     });
   } else if (arg == "GET_BLOCK") {
+    console.log(process.argv[4]);
     get(process.argv[3], process.argv[4]);
     getCounter += 1
+  } else if (arg == "SYNC") {
+    // Convert %2F encoding to forward slash
+    // retrieve all the missing blocks recursively
+    retrieveMissing(process.argv[3].replace(/%2F/g, '/'));
   }
 }
 

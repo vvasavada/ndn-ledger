@@ -133,21 +133,31 @@ var DEFAULT_RSA_PRIVATE_KEY_DER = new Buffer([
 
 var Repository = function Repository(face) {
   this.face = face;
+  this.receivedNotif = {};
+  this.receivedSync = {};
 };
 
 Repository.prototype.onInterest = async function(prefix, interest, face, interestFilterId, filter)
 {
   name = interest.getName();
-  var res = name.toUri().split("/");
-  if(res[2] == "notif"){ // res in this case will be: ['', ledger, notif, producer-prefix, hash]
-
+  nameUri = name.toUri();
+  console.log("Got interest: " + nameUri);
+  var nameComponents = nameUri.split("/");
+  if(nameComponents[2] == "notif"){ // nameComponents in this case will be: ['', ledger, notif, producer-prefix, hash]
+    var producerPrefix = nameComponents[3];
+    var blockHash = nameComponents[4];
     // Send Get Block request only if it wasn't notified by this node
-    if (res[3] != config.local_pref){
-      var exec = require('child_process').spawn, child;
-      child = exec("node",  ["client.js", "GET_BLOCK", res[3], res[4]]) 
-      child.stdout.on('data', function (data) {
-                console.log('stdout: ' + data);
-              });
+    if (producerPrefix != config.local_pref){
+      if (this.receivedSync[blockHash]){
+        var exec = require('child_process').spawn, child;
+        child = exec("node",  ["client.js", "GET_BLOCK", producerPrefix, blockHash]) 
+        child.stdout.on('data', function (data) {
+          console.log('stdout: ' + data);
+        });
+        delete this.receivedSync[blockHash];
+      } else {
+        this.receivedNotif[blockHash] = true;
+      }
     }
 
     var data = new Data(name);
@@ -157,17 +167,49 @@ Repository.prototype.onInterest = async function(prefix, interest, face, interes
       console.log(e.toString());
     }
 
-  } else { // res in this case will be: ['', ledger, producer-prefix, hash]
+  } else if (nameComponents[2] == "sync"){ // nameComponents in this case will be: ['', ledger, sync, tip components*]
+    var producerPrefix = nameComponents[3];
+    var blockHash = nameComponents[4];
+    if (producerPrefix != config.local_pref){
+      var exec = require('child_process').spawn, child;
+      child = exec("node", ["client.js", "SYNC", res.splice(5).join('')]);
+      child.stdout.on('data', function (data) {
+        console.log('stdout: ' + data);
+      });
+
+      var self = this
+      child.on('exit', function (code) {
+        if (self.receivedNotif[blockHash]){
+          var exec = require('child_process').spawn, child;
+          child = exec("node",  ["client.js", "GET_BLOCK", producerPrefix, blockHash])
+          child.stdout.on('data', function (data) {
+            console.log('stdout: ' + data);
+          });
+          delete self.receivedNotif[blockHash];
+        } else {
+          self.receivedSync[blockHash] = true;
+        }
+      });
+    }
+
+    var data = new Data(name);
+    try{
+      face.putData(data);
+    } catch (e) {
+      console.log(e.toString());
+    }
+  } else { // nameComponents in this case will be: ['', ledger, producer-prefix, hash]
+      var producerPrefix = nameComponents[2];
+      var blockHash = nameComponents[3];
       try{
-        hash = res[3]
-        block = await tangle.fetch(hash)
+        block = await tangle.fetch(blockHash)
       } catch (err) {
         /* We don't have this block either, so broadcast */
         var exec = require('child_process').spawn, child;
-        child = exec("node", ["client.js", "GET_BLOCK", res[2], res[3]]);
+        child = exec("node", ["client.js", "GET_BLOCK", producerPreifx, blockHash]);
         child.stdout.on('data', function (data) {
-                  console.log('stdout: ' + data);
-                });
+          console.log('stdout: ' + data);
+        });
         return
       }
 
