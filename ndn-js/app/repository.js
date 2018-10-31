@@ -148,12 +148,15 @@ Repository.prototype.onInterest = async function(prefix, interest, face, interes
     var blockHash = nameComponents[4];
     // Send Get Block request only if it wasn't notified by this node
     if (producerPrefix != config.local_pref){
-      if (this.receivedSync[blockHash]){
-        var exec = require('child_process').spawn, child;
-        child = exec("node",  ["client.js", "GET_BLOCK", producerPrefix, blockHash]) 
-        child.stdout.on('data', function (data) {
-          console.log('stdout: ' + data);
-        });
+      var syncStatus = this.receivedSync[blockHash];
+      if (syncStatus != 'undefined'){
+        if (!(syncStatus)){
+          var exec = require('child_process').spawn, child;
+          child = exec("node",  ["client.js", "GET_BLOCK", producerPrefix, blockHash]) 
+          child.stdout.on('data', function (data) {
+            console.log('stdout: ' + data);
+          });
+        } 
         delete this.receivedSync[blockHash];
       } else {
         this.receivedNotif[blockHash] = true;
@@ -180,14 +183,16 @@ Repository.prototype.onInterest = async function(prefix, interest, face, interes
       var self = this
       child.on('exit', function (code) {
         if (self.receivedNotif[blockHash]){
-          var exec = require('child_process').spawn, child;
-          child = exec("node",  ["client.js", "GET_BLOCK", producerPrefix, blockHash])
-          child.stdout.on('data', function (data) {
-            console.log('stdout: ' + data);
-          });
+          if (!(code){
+            var exec = require('child_process').spawn, child;
+            child = exec("node",  ["client.js", "GET_BLOCK", producerPrefix, blockHash])
+            child.stdout.on('data', function (data) {
+              console.log('stdout: ' + data);
+            });
+          }
           delete self.receivedNotif[blockHash];
         } else {
-          self.receivedSync[blockHash] = true;
+          self.receivedSync[blockHash] = code; 
         }
       });
     }

@@ -111,7 +111,7 @@ var onTimeout = function(interest) {
       tangle.close();
       face.close();
     }
-    return -1;
+    process.exit(1); // return the script with error code
   }
   console.log("Retrying...");
   face.expressInterest(interest, onData, onTimeout);
@@ -225,6 +225,10 @@ function main(){
     // Convert %2F encoding to forward slash
     // retrieve all the missing blocks recursively
     retrieveMissing(process.argv[3].replace(/%2F/g, '/'));
+  } else{
+    tangle.close();
+    face.close();
+    return;
   }
 }
 
