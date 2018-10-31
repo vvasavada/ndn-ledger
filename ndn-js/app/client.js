@@ -18,15 +18,19 @@
  */
 
 var readline = require('readline');
+var Blob = require('..').Blob;
+var HmacWithSha256Signature = require('..').HmacWithSha256Signature;
+var KeyLocatorType = require('..').KeyLocatorType;
+var KeyChain = require('..').KeyChain;
 var Face = require('..').Face;
 var Name = require('..').Name;
 var Interest = require('..').Interest;
 var Data = require('..').Data;
 var UnixTransport = require('..').UnixTransport;
-var config = require('..').Config
-var DataContent = require('../..').DataContent
-var tangle = require('../..').tangle
-var Crypto = require('crypto')
+var config = require('..').Config;
+var DataContent = require('../..').DataContent;
+var tangle = require('../..').tangle;
+var Crypto = require('crypto');
 
 retryDict = {}
 pendingAttaches = []
@@ -37,14 +41,29 @@ var onData = async function(interest, data) {
   console.log("Got data packet with name " + name);
   var nameComponents = name.split("/");
   if (nameComponents[2] != 'notif' && nameComponents[2] != 'sync'){
+    var key = data.getSignature().getKeyLocator().getKeyData();
+    if (!(KeyChain.verifyDataWithHmacWithSha256(data, key))){
+      console.log("Signature verification failed");
+      tangle.close();
+      face.close();
+      return
+    }
+
     getCounter -= 1;
     delete retryDict[name];
 
-    /* Add block to list of pending attaches */
-    pendingAttaches.unshift(data);
-
     dataContent = new DataContent();
     dataContent.populateFromJson(data.getContent().toString());
+
+    if (await tangle.inTangle(nameComponents[3])){
+      console.log("Block already exists in ledger. Discarding...");
+      tangle.close();
+      face.close();
+      return
+    }
+
+    /* Add block to list of pending attaches */
+    pendingAttaches.unshift(data);
 
     /* Check if branch and trunk are in Tangle or retrieve them */
     var branch = dataContent.getBranch();
@@ -167,14 +186,24 @@ var generateBlock = async function() {
   let hash_ = Crypto.createHash('sha256').update(content + 
      new Date().toISOString()).digest('hex');
 
-  name = new Name(config.multicast_pref);
+  var name = new Name(config.multicast_pref);
   name.append(config.local_pref);
   name.append(hash_);
-  block = new Data(name);
+
+  var key = new Blob(config.key);
+  var block = new Data(name);
+  var signature = new HmacWithSha256Signature();
+  signature.getKeyLocator().setType(KeyLocatorType.KEY_LOCATOR_DIGEST);
+  signature.getKeyLocator().setKeyName(new Name(config.keylocator));
+  signature.getKeyLocator().setKeyData(key);
+
+  block.setSignature(signature);
   console.log("Created block: " + name.toUri());
 
-  dataContent = new DataContent(content);
+  var dataContent = new DataContent(content);
   block.setContent(JSON.stringify(dataContent));
+
+  KeyChain.signWithHmacWithSha256(block, key);
 
   await ensureTangleIsReady();
   await sync(hash_);

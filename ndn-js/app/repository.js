@@ -172,7 +172,7 @@ Repository.prototype.onInterest = async function(prefix, interest, face, interes
     var blockHash = nameComponents[4];
     if (producerPrefix != config.local_pref){
       var exec = require('child_process').spawn, child;
-      child = exec("node", ["client.js", "SYNC", res.splice(5).join('')]);
+      child = exec("node", ["client.js", "SYNC", nameComponents.splice(5).join('')]);
       child.stdout.on('data', function (data) {
         console.log('stdout: ' + data);
       });
