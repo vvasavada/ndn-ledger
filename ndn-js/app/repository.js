@@ -183,7 +183,7 @@ Repository.prototype.onInterest = async function(prefix, interest, face, interes
       var self = this
       child.on('exit', function (code) {
         if (self.receivedNotif[blockHash]){
-          if (!(code){
+          if (!(code)){
             var exec = require('child_process').spawn, child;
             child = exec("node",  ["client.js", "GET_BLOCK", producerPrefix, blockHash])
             child.stdout.on('data', function (data) {
