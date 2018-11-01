@@ -243,13 +243,13 @@ function main()
   face.setCommandSigningInfo(keyChain, keyChain.getDefaultCertificateName());
   var repository = new Repository(face);
   var multicast_pref = new Name(config.multicast_pref);
-  var local_pref = new Name(config.local_pref);
+  var routing_pref = new Name(config.routing_pref);
   console.log("Register multicast prefix " + multicast_pref.toUri());
-  console.log("Register local prefix " + local_pref.toUri());
+  console.log("Register routable prefix " + routing_pref.toUri());
   face.registerPrefix
     (multicast_pref, repository.onInterest.bind(repository), repository.onRegisterFailed.bind(repository));
   face.registerPrefix
-    (local_pref, repository.onInterest.bind(repository), repository.onRegisterFailed.bind(repository));
+    (routing_pref, repository.onInterest.bind(repository), repository.onRegisterFailed.bind(repository));
 }
 
 main();
