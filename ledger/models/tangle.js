@@ -68,13 +68,12 @@ Tangle.prototype.updateApprovers = async function(approveeHash, approver)
 /**
  * Update weight
  */
-Tangle.prototype.updateWeight = function(hash)
+Tangle.prototype.updateWeight = async function(hash)
 {
-  weightFunc = this.db_.getWeight(hash)
-  weightFunc.then(function(weight){
-    weight += 1
-    tangle.db_.putWeight(hash, weight)
-  });
+  weight = await this.db_.getWeight(hash)
+  weight = parseInt(weight, 10);
+  weight += 1;
+  tangle.db_.putWeight(hash, weight)
 }
 
 /**
@@ -83,23 +82,23 @@ Tangle.prototype.updateWeight = function(hash)
  */
 Tangle.prototype.updateWeights = async function(hash, visited)
 {
-  visited.push(hash)
+  visited.add(hash)
   if (hash == this.genesisHash_){
     return
   }
  
   branchCurrent = await this.db_.getBranch(hash)
-  if (!(branchCurrent in visited)){
-    branchHash = branchCurrent.split("/")[3]
-    this.updateWeight(branchHash)
-    this.updateWeights(branchHash, visited)
+  branchHash = branchCurrent.split("/")[3]
+  if (!(visited.has(branchHash))){
+    await this.updateWeight(branchHash)
+    await this.updateWeights(branchHash, visited)
   }
 
   trunkCurrent = await this.db_.getTrunk(hash)
-  if (trunkCurrent != branchCurrent && !(trunkCurrent in visited)){
-    trunkHash = trunkCurrent.split("/")[3]
-    this.updateWeight(trunkHash)
-    this.updateWeights(trunkHash, visited)
+  trunkHash = trunkCurrent.split("/")[3]
+  if (trunkHash != branchHash && !(visited.has(trunkHash))){
+    await this.updateWeight(trunkHash)
+    await this.updateWeights(trunkHash, visited)
   }
 }
 
@@ -116,7 +115,9 @@ tipSelection = async function(db, genesis, tips)
     approvers = [...approvers.toString().split(',')]
     weights = []
     approvers.forEach(function(approver){
-      weights.push(db.getWeight(approver.split("/")[3]))
+      weight = db.getWeight(approver.split("/")[3]);
+      weight = parseInt(weight, 10);
+      weights.push(weight);
     });
 
     selectedApprover = null
@@ -225,14 +226,14 @@ Tangle.prototype.attach = async function(block)
     * Update these branch and trunk
     */
   branchHash = branch.split("/")[3]
-  this.updateWeight(branchHash)
-  this.updateWeights(branchHash, [])
+  await this.updateWeight(branchHash)
+  await this.updateWeights(branchHash, new Set([]))
   await this.updateApprovers(branchHash, blockName)
 
   trunkHash = trunk.split("/")[3]
   if (branch != trunk){
-    this.updateWeight(trunkHash)
-    this.updateWeights(trunkHash, [])
+    await this.updateWeight(trunkHash)
+    await this.updateWeights(trunkHash, new Set([]))
     await this.updateApprovers(trunkHash, blockName)
   }
 
