@@ -211,7 +211,7 @@ Repository.prototype.onInterest = async function(prefix, interest, face, interes
       } catch (err) {
         /* We don't have this block either, so broadcast */
         var exec = require('child_process').spawn, child;
-        child = exec("node", ["client.js", "GET_BLOCK", producerPreifx, blockHash]);
+        child = exec("node", ["client.js", "GET_BLOCK", producerPrefix, blockHash]);
         child.stdout.on('data', function (data) {
           console.log('stdout: ' + data);
         });
