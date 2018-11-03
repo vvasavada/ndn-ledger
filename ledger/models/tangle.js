@@ -42,10 +42,10 @@ Tangle.prototype.populate = function(){
     this.tips_ = [ genesisName ]
 
     // Startup details are [genesisHash, Tips*]
-    startupDetails = [this.genesisHash_, genesisName ]
+    var startupDetails = [this.genesisHash_, genesisName ]
     this.db_.putStartupDetails(startupDetails)
   } else {
-    startupDetailsFunc = this.db_.getStartupDetails()
+    var startupDetailsFunc = this.db_.getStartupDetails()
     startupDetailsFunc.then(function(startupDetails){
       startupDetails = [...startupDetails.toString().split(',')]
       tangle.genesisHash_ = startupDetails[0]
@@ -59,7 +59,7 @@ Tangle.prototype.populate = function(){
  */
 Tangle.prototype.updateApprovers = async function(approveeHash, approver)
 {
-  approvers = await this.db_.getApprovers(approveeHash);
+  var approvers = await this.db_.getApprovers(approveeHash);
   approvers = [...approvers.toString().split(',').filter((val)=>val)]
   approvers.push(approver)
   tangle.db_.putApprovers(approveeHash, approvers)
@@ -70,7 +70,7 @@ Tangle.prototype.updateApprovers = async function(approveeHash, approver)
  */
 Tangle.prototype.updateWeight = async function(hash)
 {
-  weight = await this.db_.getWeight(hash)
+  var weight = await this.db_.getWeight(hash)
   weight = parseInt(weight, 10);
   weight += 1;
   tangle.db_.putWeight(hash, weight)
@@ -87,15 +87,15 @@ Tangle.prototype.updateWeights = async function(hash, visited)
     return
   }
  
-  branchCurrent = await this.db_.getBranch(hash)
-  branchHash = branchCurrent.split("/")[3]
+  var branchCurrent = await this.db_.getBranch(hash)
+  var branchHash = branchCurrent.split("/")[3]
   if (!(visited.has(branchHash))){
     await this.updateWeight(branchHash)
     await this.updateWeights(branchHash, visited)
   }
 
-  trunkCurrent = await this.db_.getTrunk(hash)
-  trunkHash = trunkCurrent.split("/")[3]
+  var trunkCurrent = await this.db_.getTrunk(hash)
+  var trunkHash = trunkCurrent.split("/")[3]
   if (trunkHash != branchHash && !(visited.has(trunkHash))){
     await this.updateWeight(trunkHash)
     await this.updateWeights(trunkHash, visited)
@@ -108,32 +108,32 @@ Tangle.prototype.updateWeights = async function(hash, visited)
  */
 tipSelection = async function(db, genesis, tips)
 {
-  current = genesis
+  var current = genesis
   while (!(tips.includes(current))){
-    current = current.split("/")[3]
-    approvers = await db.getApprovers(current)
+    current = current.split("/")[3];
+    var approvers = await db.getApprovers(current)
     approvers = [...approvers.toString().split(',')]
-    weights = []
-    approvers.forEach(function(approver){
-      weight = db.getWeight(approver.split("/")[3]);
+    var weights = []
+    for (approver of approvers){
+      var weight = await db.getWeight(approver.split("/")[3]);
       weight = parseInt(weight, 10);
       weights.push(weight);
-    });
-
+    }
+    
     selectedApprover = null
 
     /* Weighted selection of random number */
-    cumWeights = []
+    var cumWeights = []
     cumWeights[0] = weights[0]
     for (i = 1; i < weights.length; i++){
       cumWeights[i] = weights[i-1] + weights[i]
     }
-
-    min = cumWeights[0]
-    max = cumWeights[cumWeights.length - 1]
+    
+    var min = cumWeights[0]
+    var max = cumWeights[cumWeights.length - 1]
     randInt = Math.floor(Math.random() * (max - min + 1)) + min;
 
-    bisected = false
+    var bisected = false
     for (i = 0; i < cumWeights.length; i++){
       if (randInt < cumWeights[i]){
         selectedApprover = approvers[i]
@@ -206,8 +206,8 @@ Tangle.prototype.attach = async function(block)
       * Probability of node i being chosen = W_i/W_total
       */
     genesis = "/ledger/ledger/" + this.genesisHash_
-    branch = await tipSelection(this.db_, genesis, this.tips_)
-    trunk = await tipSelection(this.db_, genesis, this.tips_)
+    var branch = await tipSelection(this.db_, genesis, this.tips_)
+    var trunk = await tipSelection(this.db_, genesis, this.tips_)
 
     dataContent.setBranch(branch)
     dataContent.setTrunk(trunk)
@@ -225,12 +225,12 @@ Tangle.prototype.attach = async function(block)
   /**
     * Update these branch and trunk
     */
-  branchHash = branch.split("/")[3]
+  var branchHash = branch.split("/")[3]
   await this.updateWeight(branchHash)
   await this.updateWeights(branchHash, new Set([]))
   await this.updateApprovers(branchHash, blockName)
 
-  trunkHash = trunk.split("/")[3]
+  var trunkHash = trunk.split("/")[3]
   if (branch != trunk){
     await this.updateWeight(trunkHash)
     await this.updateWeights(trunkHash, new Set([]))
