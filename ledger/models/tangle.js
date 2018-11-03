@@ -206,11 +206,13 @@ Tangle.prototype.attach = async function(block)
       * Probability of node i being chosen = W_i/W_total
       */
     genesis = "/ledger/ledger/" + this.genesisHash_
-    var branch = await tipSelection(this.db_, genesis, this.tips_)
-    var trunk = await tipSelection(this.db_, genesis, this.tips_)
+    branch = await tipSelection(this.db_, genesis, this.tips_)
+    trunk = await tipSelection(this.db_, genesis, this.tips_)
 
     dataContent.setBranch(branch)
     dataContent.setTrunk(trunk)
+
+    block.setContent(JSON.stringify(dataContent));
   } else {
     branch = dataContent.getBranch()
     trunk = dataContent.getTrunk()
