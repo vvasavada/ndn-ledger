@@ -21,16 +21,40 @@ ndn-ledger module has two major components.
 
 Note: The following installation instructions are only for linux/ubuntu users. We still haven't tried running the code in other environments.
 
+### Virtual Machine
+For a Mac, use virtualbox following these instructions
+
+https://www.simplehelp.net/2015/06/09/how-to-install-ubuntu-on-your-mac/
+
+Installed Ubuntu 18.04.1
+
+### Install Curl
+Open System settings > Software & Updates > Ubuntu Software > make sure you have all the source selected (main, universe, restricted, and multiverse) and select download from Main server.
+
+Now try sudo apt-get update && sudo apt-get install curl
+
 ##### Prerequisites
 
 You need to install following packages/softwares to before checking out the code and get it running.
 
 - Node.js v6+ (https://nodejs.org/en/download/package-manager/#debian-and-ubuntu-based-linux-distributions)
+
+    - Installed node v11.0
+
 - Named Data Networking Forwarding Daemon v0.6.4 (https://named-data.net/doc/NFD/current/INSTALL.html)
+
+    - Had to enable the PPA source code in the 'Other Software' tab of Ubuntu before package installer would load prerequisities
+
+##### Install git
+
+- sudeo apt install git
 
 ##### Installing ndn-ledger
 
-Checkout the code from this repository and install required node modules.
+Checkout the code from this repository and install required node modules
+
+I had to explicitly add: 'multilevel' and 'level'.  Other requirements are built in node modules now
+
 ```sh
 $ git clone https://github.com/vvasavada/ndn-ledger.git
 $ cd ndn-ledger
