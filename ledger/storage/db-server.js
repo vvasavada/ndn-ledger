@@ -26,7 +26,14 @@ exports.dbExists = dbExists;
 if (require.main === module){
   var db = level('database');
   net.createServer(function (con) {
-    con.pipe(multilevel.server(db)).pipe(con);
+    var stream = con.pipe(multilevel.server(db));
+    con.on('error', function(err){
+      console.log(err);
+    });
+    stream.pipe(con);
+    stream.on('error', function(err){
+      console.log(err);
+    });
   }).listen(3000);
 }
 
