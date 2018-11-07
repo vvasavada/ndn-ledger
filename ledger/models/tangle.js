@@ -4,7 +4,12 @@ var Crypto = require('crypto')
 var dbExists = require('../..').dbExists
 var Data = require('../..').ndnjs.Data
 var Name = require('../..').ndnjs.Name;
+var config = require('../..').ndnjs.Config
 var EncodingUtils = require('../..').ndnjs.EncodingUtils;
+var HmacWithSha256Signature = require('../..').ndnjs.HmacWithSha256Signature;
+var KeyLocatorType = require('../..').ndnjs.KeyLocatorType;
+var KeyChain = require('../..').ndnjs.KeyChain;
+var Blob = require('../..').ndnjs.Blob;
 
 /**
  * This class represents Tangle. 
@@ -32,6 +37,16 @@ Tangle.prototype.populate = function(){
     var genesis = new Data(name)
     console.log('Created Block: ' + name.toUri());
     genesis.setContent(JSON.stringify(genesisContent));
+
+    var key = new Blob(config.key);
+    var signature = new HmacWithSha256Signature();
+    signature.getKeyLocator().setType(KeyLocatorType.KEY_LOCATOR_DIGEST);
+    signature.getKeyLocator().setKeyData(key);
+
+    genesis.setSignature(signature);
+    console.log("Signed block with key: " + key.toString());
+
+    KeyChain.signWithHmacWithSha256(genesis, key);
 
     this.db_.putBlock(this.genesisHash_, EncodingUtils.encodeToHexData(genesis));
     this.db_.putWeight(this.genesisHash_, 1)
@@ -213,6 +228,17 @@ Tangle.prototype.attach = async function(block)
     dataContent.setTrunk(trunk)
 
     block.setContent(JSON.stringify(dataContent));
+
+    var key = new Blob(config.key);
+    var signature = new HmacWithSha256Signature();
+    signature.getKeyLocator().setType(KeyLocatorType.KEY_LOCATOR_DIGEST);
+    signature.getKeyLocator().setKeyData(key);
+
+    block.setSignature(signature);
+    console.log("Signed block with key: " + key.toString());
+
+    KeyChain.signWithHmacWithSha256(block, key);
+
   } else {
     branch = dataContent.getBranch()
     trunk = dataContent.getTrunk()
