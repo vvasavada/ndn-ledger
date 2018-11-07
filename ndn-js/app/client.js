@@ -42,12 +42,12 @@ var onData = async function(interest, data) {
   var nameComponents = name.split("/");
   if (nameComponents[2] != 'notif' && nameComponents[2] != 'sync'){
     var key = data.getSignature().getKeyLocator().getKeyData();
-    /*if (!(KeyChain.verifyDataWithHmacWithSha256(data, key))){
+    if (!(KeyChain.verifyDataWithHmacWithSha256(data, key))){
       console.log("Signature verification failed");
       tangle.close();
       face.close();
       return
-    }*/
+    }
 
     getCounter -= 1;
     delete retryDict[name];
@@ -194,7 +194,6 @@ var generateBlock = async function() {
   var block = new Data(name);
   var signature = new HmacWithSha256Signature();
   signature.getKeyLocator().setType(KeyLocatorType.KEY_LOCATOR_DIGEST);
-  signature.getKeyLocator().setKeyName(new Name(config.keylocator));
   signature.getKeyLocator().setKeyData(key);
 
   block.setSignature(signature);
