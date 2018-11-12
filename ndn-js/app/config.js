@@ -13,6 +13,5 @@ config.num_retries = 5;
 
 /* Security */
 config.key = "testkey"
-config.keylocator = "testkey1"
 
 module.exports = config;

@@ -4,7 +4,12 @@ var Crypto = require('crypto')
 var dbExists = require('../..').dbExists
 var Data = require('../..').ndnjs.Data
 var Name = require('../..').ndnjs.Name;
+var config = require('../..').ndnjs.Config
 var EncodingUtils = require('../..').ndnjs.EncodingUtils;
+var HmacWithSha256Signature = require('../..').ndnjs.HmacWithSha256Signature;
+var KeyLocatorType = require('../..').ndnjs.KeyLocatorType;
+var KeyChain = require('../..').ndnjs.KeyChain;
+var Blob = require('../..').ndnjs.Blob;
 
 /**
  * This class represents Tangle. 
@@ -33,6 +38,16 @@ Tangle.prototype.populate = function(){
     console.log('Created Block: ' + name.toUri());
     genesis.setContent(JSON.stringify(genesisContent));
 
+    var key = new Blob(config.key);
+    var signature = new HmacWithSha256Signature();
+    signature.getKeyLocator().setType(KeyLocatorType.KEY_LOCATOR_DIGEST);
+    signature.getKeyLocator().setKeyData(key);
+
+    genesis.setSignature(signature);
+    console.log("Signed block with key: " + key.toString());
+
+    KeyChain.signWithHmacWithSha256(genesis, key);
+
     this.db_.putBlock(this.genesisHash_, EncodingUtils.encodeToHexData(genesis));
     this.db_.putWeight(this.genesisHash_, 1)
     this.db_.putApprovers(this.genesisHash_, [])
@@ -42,10 +57,10 @@ Tangle.prototype.populate = function(){
     this.tips_ = [ genesisName ]
 
     // Startup details are [genesisHash, Tips*]
-    startupDetails = [this.genesisHash_, genesisName ]
+    var startupDetails = [this.genesisHash_, genesisName ]
     this.db_.putStartupDetails(startupDetails)
   } else {
-    startupDetailsFunc = this.db_.getStartupDetails()
+    var startupDetailsFunc = this.db_.getStartupDetails()
     startupDetailsFunc.then(function(startupDetails){
       startupDetails = [...startupDetails.toString().split(',')]
       tangle.genesisHash_ = startupDetails[0]
@@ -59,7 +74,7 @@ Tangle.prototype.populate = function(){
  */
 Tangle.prototype.updateApprovers = async function(approveeHash, approver)
 {
-  approvers = await this.db_.getApprovers(approveeHash);
+  var approvers = await this.db_.getApprovers(approveeHash);
   approvers = [...approvers.toString().split(',').filter((val)=>val)]
   approvers.push(approver)
   tangle.db_.putApprovers(approveeHash, approvers)
@@ -68,13 +83,12 @@ Tangle.prototype.updateApprovers = async function(approveeHash, approver)
 /**
  * Update weight
  */
-Tangle.prototype.updateWeight = function(hash)
+Tangle.prototype.updateWeight = async function(hash)
 {
-  weightFunc = this.db_.getWeight(hash)
-  weightFunc.then(function(weight){
-    weight += 1
-    tangle.db_.putWeight(hash, weight)
-  });
+  var weight = await this.db_.getWeight(hash)
+  weight = parseInt(weight, 10);
+  weight += 1;
+  tangle.db_.putWeight(hash, weight)
 }
 
 /**
@@ -83,23 +97,23 @@ Tangle.prototype.updateWeight = function(hash)
  */
 Tangle.prototype.updateWeights = async function(hash, visited)
 {
-  visited.push(hash)
+  visited.add(hash)
   if (hash == this.genesisHash_){
     return
   }
  
-  branchCurrent = await this.db_.getBranch(hash)
-  if (!(branchCurrent in visited)){
-    branchHash = branchCurrent.split("/")[3]
-    this.updateWeight(branchHash)
-    this.updateWeights(branchHash, visited)
+  var branchCurrent = await this.db_.getBranch(hash)
+  var branchHash = branchCurrent.split("/")[3]
+  if (!(visited.has(branchHash))){
+    await this.updateWeight(branchHash)
+    await this.updateWeights(branchHash, visited)
   }
 
-  trunkCurrent = await this.db_.getTrunk(hash)
-  if (trunkCurrent != branchCurrent && !(trunkCurrent in visited)){
-    trunkHash = trunkCurrent.split("/")[3]
-    this.updateWeight(trunkHash)
-    this.updateWeights(trunkHash, visited)
+  var trunkCurrent = await this.db_.getTrunk(hash)
+  var trunkHash = trunkCurrent.split("/")[3]
+  if (trunkHash != branchHash && !(visited.has(trunkHash))){
+    await this.updateWeight(trunkHash)
+    await this.updateWeights(trunkHash, visited)
   }
 }
 
@@ -109,30 +123,32 @@ Tangle.prototype.updateWeights = async function(hash, visited)
  */
 tipSelection = async function(db, genesis, tips)
 {
-  current = genesis
+  var current = genesis
   while (!(tips.includes(current))){
-    current = current.split("/")[3]
-    approvers = await db.getApprovers(current)
+    current = current.split("/")[3];
+    var approvers = await db.getApprovers(current)
     approvers = [...approvers.toString().split(',')]
-    weights = []
-    approvers.forEach(function(approver){
-      weights.push(db.getWeight(approver.split("/")[3]))
-    });
-
+    var weights = []
+    for (approver of approvers){
+      var weight = await db.getWeight(approver.split("/")[3]);
+      weight = parseInt(weight, 10);
+      weights.push(weight);
+    }
+    
     selectedApprover = null
 
     /* Weighted selection of random number */
-    cumWeights = []
+    var cumWeights = []
     cumWeights[0] = weights[0]
     for (i = 1; i < weights.length; i++){
       cumWeights[i] = weights[i-1] + weights[i]
     }
-
-    min = cumWeights[0]
-    max = cumWeights[cumWeights.length - 1]
+    
+    var min = cumWeights[0]
+    var max = cumWeights[cumWeights.length - 1]
     randInt = Math.floor(Math.random() * (max - min + 1)) + min;
 
-    bisected = false
+    var bisected = false
     for (i = 0; i < cumWeights.length; i++){
       if (randInt < cumWeights[i]){
         selectedApprover = approvers[i]
@@ -210,6 +226,19 @@ Tangle.prototype.attach = async function(block)
 
     dataContent.setBranch(branch)
     dataContent.setTrunk(trunk)
+
+    block.setContent(JSON.stringify(dataContent));
+
+    var key = new Blob(config.key);
+    var signature = new HmacWithSha256Signature();
+    signature.getKeyLocator().setType(KeyLocatorType.KEY_LOCATOR_DIGEST);
+    signature.getKeyLocator().setKeyData(key);
+
+    block.setSignature(signature);
+    console.log("Signed block with key: " + key.toString());
+
+    KeyChain.signWithHmacWithSha256(block, key);
+
   } else {
     branch = dataContent.getBranch()
     trunk = dataContent.getTrunk()
@@ -224,15 +253,15 @@ Tangle.prototype.attach = async function(block)
   /**
     * Update these branch and trunk
     */
-  branchHash = branch.split("/")[3]
-  this.updateWeight(branchHash)
-  this.updateWeights(branchHash, [])
+  var branchHash = branch.split("/")[3]
+  await this.updateWeight(branchHash)
+  await this.updateWeights(branchHash, new Set([]))
   await this.updateApprovers(branchHash, blockName)
 
-  trunkHash = trunk.split("/")[3]
+  var trunkHash = trunk.split("/")[3]
   if (branch != trunk){
-    this.updateWeight(trunkHash)
-    this.updateWeights(trunkHash, [])
+    await this.updateWeight(trunkHash)
+    await this.updateWeights(trunkHash, new Set([]))
     await this.updateApprovers(trunkHash, blockName)
   }
 

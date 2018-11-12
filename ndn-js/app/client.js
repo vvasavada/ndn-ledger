@@ -19,8 +19,6 @@
 
 var readline = require('readline');
 var Blob = require('..').Blob;
-var HmacWithSha256Signature = require('..').HmacWithSha256Signature;
-var KeyLocatorType = require('..').KeyLocatorType;
 var KeyChain = require('..').KeyChain;
 var Face = require('..').Face;
 var Name = require('..').Name;
@@ -192,18 +190,10 @@ var generateBlock = async function() {
 
   var key = new Blob(config.key);
   var block = new Data(name);
-  var signature = new HmacWithSha256Signature();
-  signature.getKeyLocator().setType(KeyLocatorType.KEY_LOCATOR_DIGEST);
-  signature.getKeyLocator().setKeyName(new Name(config.keylocator));
-  signature.getKeyLocator().setKeyData(key);
-
-  block.setSignature(signature);
   console.log("Created block: " + name.toUri());
 
   var dataContent = new DataContent(content);
   block.setContent(JSON.stringify(dataContent));
-
-  KeyChain.signWithHmacWithSha256(block, key);
 
   await ensureTangleIsReady();
   await sync(hash_);

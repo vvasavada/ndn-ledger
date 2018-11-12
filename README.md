@@ -111,3 +111,28 @@ If you want this node to generate a new block and notify other nodes, you'll hav
 $ cd ndn-ledger/ndn-js/app
 $ node client.js NOTIF
 ```
+##### Configuring NFDs
+
+Below we give an example of how to configure NFDs at the nodes. Assume that you have two nodes with NFDs running and node1 and node2 are their hostnames and 192.168.56.101 and 192.168.56.102 are their IPs respectively.
+
+At node1:
+
+```sh
+$ nfdc face create udp://192.168.56.102
+$ nfdc route add /ledger udp://192.168.56.102
+$ nfdc route add /ledger/node2 udp://192.168.56.102
+$ nfdc strategy set /ledger /localhost/nfd/strategy/multicast/%FD%03
+$ nfdc strategy set /ledger/node2 /localhost/nfd/strategy/best-route/%FD%05
+```
+
+At node 2:
+
+```sh
+$ nfdc face create udp://192.168.56.101
+$ nfdc route add /ledger udp://192.168.56.101
+$ nfdc route add /ledger/node1 udp://192.168.56.101
+$ nfdc strategy set /ledger /localhost/nfd/strategy/multicast/%FD%03
+$ nfdc strategy set /ledger/node1 /localhost/nfd/strategy/best-route/%FD%05
+```
+
+If there are more nodes, you'll do same for each of their IP and routable prefix.
