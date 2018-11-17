@@ -139,3 +139,14 @@ $ ./nfd-configure udp://192.168.56.101 /node1
 ```
 
 If there are more nodes, you'll do same for each of their IP and routable prefix.
+
+### Visualizing Results
+
+To visualize tangle and generate result table, issue the following command
+
+```sh
+$ cd ndn-ledger/utils
+$ node show-results.js
+```
+
+You should be able to see tangle image. `table.csv` file in utils folder contains the result table.
