@@ -1,6 +1,5 @@
 #!/bin/bash
 
-nfd-start
 nfdc face create udp://"$1"
 nfdc route add /ledger udp://"$1"
 nfdc route add /ledger"$2" udp://"$1"
