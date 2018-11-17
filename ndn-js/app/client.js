@@ -34,7 +34,7 @@ retryDict = {}
 pendingAttaches = []
 getCounter = 0
 
-var onData = async function(interest, data) {
+var onDataLedger = async function(interest, data) {
   name = data.getName().toUri();
   console.log("Got data packet with name " + name);
   var nameComponents = name.split("/");
@@ -99,7 +99,20 @@ var onData = async function(interest, data) {
   }
 };
 
-var onTimeout = function(interest) {
+var onDataEnergy = function(interest, data) {
+  name = data.getName().toUri();
+  console.log("Got data packet with name " + name);
+  var content = data.getContent().toString().split(';');
+  console.log("Time: " + content[0]);
+  console.log("Device: " + content[1]);
+  console.log("Watt hours: " + content[2]);
+  console.log("Dollar ($): " + content[3]);
+  tangle.close();
+  face.close();
+};
+
+
+var onTimeoutLedger = function(interest) {
   var nameUri = interest.getName().toUri();
   console.log("Time out for interest " + nameUri);
   remainingTries = retryDict[nameUri]
@@ -112,8 +125,15 @@ var onTimeout = function(interest) {
     process.exit(1); // return the script with error code
   }
   console.log("Retrying...");
-  face.expressInterest(interest, onData, onTimeout);
+  face.expressInterest(interest, onDataLedger, onTimeoutLedger);
   retryDict[nameUri] = remainingTries - 1;
+};
+
+var onTimeoutEnergy = function(interest) {
+  var nameUri = interest.getName().toUri();
+  console.log("Time out for interest " + nameUri);
+  tangle.close();
+  face.close();
 };
 
 var retrieveMissing = function(tipsString) {
@@ -135,38 +155,45 @@ var retrieveMissing = function(tipsString) {
 var face = new Face(new UnixTransport());
 
 var sync = async function(blockHash){
-  name = new Name(config.multicast_pref);
+  var name = new Name(config.multicast_pref);
   name.append("sync");
   name.append(config.local_pref);
   name.append(blockHash);
 
-  tips = await tangle.getTips();
+  var tips = await tangle.getTips();
   tips.forEach(function(tip){
     name.append(tip);
   });
   console.log("Sync Interest " + name.toUri());
-  face.expressInterest(name, onData, onTimeout);
+  face.expressInterest(name, onDataLedger, onTimeoutLedger);
 }
 
 var notify = function(blockHash) {
-  name = new Name(config.multicast_pref);
+  var name = new Name(config.multicast_pref);
   name.append("notif");
   name.append(config.local_pref);
   name.append(blockHash);
   console.log("Notification Interest " + name.toUri());
-  face.expressInterest(name, onData, onTimeout);
+  face.expressInterest(name, onDataLedger, onTimeoutLedger);
 }
 
 var get = function(notifier_pref, hash) {
-  name = new Name(config.multicast_pref);
+  var name = new Name(config.multicast_pref);
   name.append(notifier_pref);
   name.append(hash);
   console.log("Interest " + name.toUri());
   console.log("Get Block: " + hash);
-  interest = new Interest(name);
+  var interest = new Interest(name);
   interest.setInterestLifetimeMilliseconds(config.interest_timeout);
-  face.expressInterest(interest, onData, onTimeout);
+  face.expressInterest(interest, onDataLedger, onTimeoutLedger);
   retryDict[interest.getName().toUri()] = config.num_retries;
+}
+
+var requestEnergyData = function(producer_pref) {
+  var name = new Name(producer_pref);
+  name.append("energy");
+  console.log("Interest " + name.toUri());
+  face.expressInterest(name, onDataEnergy, onTimeoutEnergy);
 }
 
 var ensureTangleIsReady = function(){
@@ -178,9 +205,8 @@ var ensureTangleIsReady = function(){
   });
 }
 
-var generateBlock = async function() {
+var generateBlock = async function(content) {
   // Generate some random block content
-  let content = Math.random().toString(36).substring(7);
   let hash_ = Crypto.createHash('sha256').update(content + 
      new Date().toISOString()).digest('hex');
 
@@ -204,11 +230,12 @@ var generateBlock = async function() {
 function main(){
   var arg = process.argv[2]
   if (arg == "NOTIF"){
-    generateBlock().then(function(blockHash){
+    generateBlock(process.argv[3]).then(function(blockHash){
       notify(blockHash);
     });
+  } else if (arg == "REQ") {
+    requestEnergyData(process.argv[3]);
   } else if (arg == "GET_BLOCK") {
-    console.log(process.argv[4]);
     get(process.argv[3], process.argv[4]);
     getCounter += 1
   } else if (arg == "SYNC") {

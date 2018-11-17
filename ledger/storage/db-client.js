@@ -25,7 +25,8 @@ var Database = function()
  
   this.db_ = { get: promisify(dbNoPromise.get.bind(dbNoPromise)), 
                put: promisify(dbNoPromise.put.bind(dbNoPromise)),
-               close: dbNoPromise.close.bind(dbNoPromise)}
+               close: dbNoPromise.close.bind(dbNoPromise),
+               createReadStream: dbNoPromise.createReadStream.bind(dbNoPromise)}
 }
 
 /**
@@ -164,6 +165,14 @@ Database.prototype.getStartupDetails = function()
 Database.prototype.close = function()
 {
   this.db_.close();
+}
+
+/**
+ * Create read stream
+ */
+Database.prototype.createReadStream = function()
+{
+  return this.db_.createReadStream();
 }
 
 exports.Database = Database
