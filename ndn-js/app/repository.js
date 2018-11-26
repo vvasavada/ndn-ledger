@@ -137,7 +137,7 @@ var Repository = function Repository(face) {
   this.receivedSync = {};
 };
 
-Repository.prototype.onInterest = async function(prefix, interest, face, interestFilterId, filter)
+Repository.prototype.onInterestLedger = async function(prefix, interest, face, interestFilterId, filter)
 {
   name = interest.getName();
   nameUri = name.toUri();
@@ -223,6 +223,43 @@ Repository.prototype.onInterest = async function(prefix, interest, face, interes
   }
 };
 
+Repository.prototype.onInterestEnergy = function(prefix, interest, face, interestFilterId, filter)
+{
+  name = interest.getName();
+  nameUri = name.toUri();
+  console.log("Got interest: " + nameUri);
+  var nameComponents = nameUri.split("/");
+  if (nameComponents[2] == "energy"){ // nameComponents in this case will be: ['', producer-prefix, energy]
+    var content = []
+    content.push(new Date().toString()); // append date
+
+    var inverterID = Math.floor(Math.random()*(999-100+1)+100).toString();
+    content.push("Inverter" + inverterID); // append inverter device
+
+    var wattHours = Math.floor(Math.random()*(999-100+1)+100).toString();
+    content.push(wattHours); // append watt hours
+
+    var dollars = Math.floor(Math.random()*(99-10+1)+10).toString();
+    content.push(dollars); // append dollars
+
+    content = content.join(';');
+    var data = new Data(name);
+    data.setContent(content);
+
+    try{
+      face.putData(data);
+    } catch (e) {
+      console.log(e.toString());
+    }
+
+   var exec = require('child_process').spawn, child;
+   child = exec("node", ["client.js", "NOTIF", content]);
+   child.stdout.on('data', function (data) {
+    console.log('stdout: ' + data);
+   });
+  }
+}
+
 Repository.prototype.onRegisterFailed = function(prefix)
 {
   console.log("Register failed for prefix " + prefix.toUri());
@@ -244,12 +281,16 @@ function main()
   var repository = new Repository(face);
   var multicast_pref = new Name(config.multicast_pref);
   var routing_pref = new Name(config.routing_pref);
+  var local_pref = new Name(config.local_pref);
   console.log("Register multicast prefix " + multicast_pref.toUri());
   console.log("Register routable prefix " + routing_pref.toUri());
+  console.log("Register local prefix " + local_pref.toUri());
   face.registerPrefix
-    (multicast_pref, repository.onInterest.bind(repository), repository.onRegisterFailed.bind(repository));
+    (multicast_pref, repository.onInterestLedger.bind(repository), repository.onRegisterFailed.bind(repository));
   face.registerPrefix
-    (routing_pref, repository.onInterest.bind(repository), repository.onRegisterFailed.bind(repository));
+    (routing_pref, repository.onInterestLedger.bind(repository), repository.onRegisterFailed.bind(repository));
+  face.registerPrefix
+    (local_pref, repository.onInterestEnergy.bind(repository), repository.onRegisterFailed.bind(repository));
 }
 
 main();

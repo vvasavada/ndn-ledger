@@ -65,6 +65,13 @@ You need to install following packages/softwares to before checking out the code
 
 - sudo apt install git
 
+##### Install Python Tools and required packages
+
+- sudo apt install pip
+- sudo apt install python-tk
+- pip install networkx
+- pip install matplotlib
+
 ##### Installing ndn-ledger
 
 Install required node modules
@@ -138,6 +145,19 @@ VM2: 192.168.57.255
 5) Repeat the above NFD configurations for vm2. Replace <ip2> with <ip1> and <hostname of vm2> with <hostname of vm1>. You should now be able to send notifs and exchange blocks between two nodes.
 
 Below we give an example of how to configure NFDs at the nodes. Assume that you have two nodes with NFDs running and node1 and node2 are their hostnames and 192.168.56.101 and 192.168.56.102 are their IPs respectively.
+At this point, your node is up and running -- ready to serve and receive blocks!
+
+This node will generate a block whenever it receives energy request from another node. To send energy request, please issue following command.
+
+```sh
+$ cd ndn-ledger/ndn-js/app
+$ node client.js REQ <prefix-of-node-requesting-from>
+```
+##### Configuring NFDs
+
+Once you start nfd using ```nfd-start```, you can simply run nfd-configure script in utils directory.
+
+Assume that you have two nodes with NFDs running and node1 and node2 are their hostnames and 192.168.56.101 and 192.168.56.102 are their IPs respectively.
 
 At node1:
 
@@ -147,6 +167,8 @@ $ nfdc route add /ledger udp://192.168.57.255
 $ nfdc route add /ledger/randyking-VirtualBox2 udp://192.168.57.255
 $ nfdc strategy set /ledger /localhost/nfd/strategy/multicast/%FD%03
 $ nfdc strategy set /ledger/randyking-VirtualBox2 /localhost/nfd/strategy/best-route/%FD%05
+$ cd ndn-ledger/utils
+$ ./nfd-configure udp://192.168.56.102 /node2
 ```
 
 At node 2:
@@ -157,6 +179,8 @@ $ nfdc route add /ledger udp://192.168.56.255
 $ nfdc route add /ledger/randyking-VirtualBox udp://192.168.56.255
 $ nfdc strategy set /ledger /localhost/nfd/strategy/multicast/%FD%03
 $ nfdc strategy set /ledger/randyking-VirtualBox /localhost/nfd/strategy/best-route/%FD%05
+$ cd ndn-ledger/utils
+$ ./nfd-configure udp://192.168.56.101 /node1
 ```
 
 If there are more nodes, you'll do same for each of their IP and routable prefix.
@@ -172,3 +196,13 @@ If you want this node to generate a new block and notify other nodes, you'll hav
 $ cd ndn-ledger/ndn-js/app
 $ node client.js NOTIF
 ```
+### Visualizing Results
+
+To visualize tangle and generate result table, issue the following command
+
+```sh
+$ cd ndn-ledger/utils
+$ node show-results.js
+```
+
+You should be able to see tangle image. `table.csv` file in utils folder contains the result table.

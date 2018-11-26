@@ -150,7 +150,7 @@ tipSelection = async function(db, genesis, tips)
 
     var bisected = false
     for (i = 0; i < cumWeights.length; i++){
-      if (randInt < cumWeights[i]){
+      if (randInt <= cumWeights[i]){
         selectedApprover = approvers[i]
         bisected = true
         break;
