@@ -27,7 +27,7 @@ For a Mac, use virtualbox following these instructions
 https://www.simplehelp.net/2015/06/09/how-to-install-ubuntu-on-your-mac/
 
 Installed Ubuntu 18.04.1
-- Minimal System, Yes
+- Minimal installation, Yes
 - Download updates, Yes
 - Install third part, Yes
 - Erase disk
@@ -38,6 +38,8 @@ I was asked whether to install availabe updates, I said 'yes'
 Open System settings > Software & Updates > Ubuntu Software > make sure you have all the source selected (main, universe, restricted, and multiverse) and select download from Main server.
 
 Now try sudo apt-get update && sudo apt-get install curl
+
+I installed v7.58.0
 
 ##### Prerequisites
 
@@ -65,19 +67,24 @@ You need to install following packages/softwares to before checking out the code
 
 ##### Installing ndn-ledger
 
-Checkout the code from this repository and install required node modules
+Install required node modules
 
 I had to explicitly add: 'level' and 'multilevel'   Other requirements are built in node modules now
 
 npm install level
 npm install multilevel
 
+Checkout the code from this repository and install
 
 ```sh
 $ git clone https://github.com/vvasavada/ndn-ledger.git
 $ cd ndn-ledger
 $ npm install
 ```
+
+### Doing it all over again for a second node
+
+I had some problems with cloning the VM.  So I did a clean install of a second VM.  I had to manually change the name of the computer to something diferent...when I accepted the default, it crashed my computer..not sure why
 
 ### Getting Started
 
@@ -103,6 +110,60 @@ $ cd ndn-ledger/ndn-js/app
 $ node repository.js
 ```
 
+
+##### Configuring NFDs
+
+Once you have another VM clone up (let us call them vm1 and vm2 where vm2 is cloned copy) and running, please follow the following steps:
+
+1) Change hostname in vm2 and reboot: You need to do this so that they both don't use same prefix. In vm2, open terminal. Run `sudo vi /etc/hostname` and `sudo vi /etc/hosts` and change hostname to some different name (so now, vm1 and vm2 have different hostnames). Reboot vm2.
+
+VM1: randyking-VirtualBox
+VM2: randyking-VirtualBox2
+
+2) Enable network adapters: 
+
+- Click on vm1 and power it off
+- Inside VirtualBox Manager, go to File | Host Network Manager | Create to make a Host Network Adapter. 
+- Click on Settings in top bar. In the left column, you should see 'Network'. Click on that. 
+- Go to adapter 2. Click "Enable Network Adapter". Attached to should be set to 'Host-only Adapter' and name will be something like vboxnet0. 
+- Do similar for vm2, you need to create a different named adapter, vboxnet1 for instance, for the second node.
+
+3 ) Now boot into vm1. Go to terminal and type ifconfig. You may have to add the ifconfig command by 'sudo apt install net-tools'; You should be able to see one of the interfaces having inet address of the form 192.168.x.x.  That is the public IP. Similarly, lookup for vm2. Let us call them ip1 and ip2 for vm1 and vm 2 respectively.  These may change every time you reboot.
+
+VM1: 192.168.56.255
+VM2: 192.168.57.255
+
+4) Adding face and routes to NFD: In vm1, run `nfdc face create udp://<ip2>`. This adds a face to connect to vm2. Now you add a multicast route and route to reach vm2. So run `nfdc route add /ledger udp://<ip2>` and `nfdc route add /ledger/<hostname of vm2> udp://<ip2>`. You need to set strategy of /ledger prefix to multicast. So do `nfdc strategy set /localhost/nfd/strategy/multicast/%FD%03`. 
+
+5) Repeat the above NFD configurations for vm2. Replace <ip2> with <ip1> and <hostname of vm2> with <hostname of vm1>. You should now be able to send notifs and exchange blocks between two nodes.
+
+Below we give an example of how to configure NFDs at the nodes. Assume that you have two nodes with NFDs running and node1 and node2 are their hostnames and 192.168.56.101 and 192.168.56.102 are their IPs respectively.
+
+At node1:
+
+```sh
+$ nfdc face create udp://192.168.57.255
+$ nfdc route add /ledger udp://192.168.57.255
+$ nfdc route add /ledger/randyking-VirtualBox2 udp://192.168.57.255
+$ nfdc strategy set /ledger /localhost/nfd/strategy/multicast/%FD%03
+$ nfdc strategy set /ledger/randyking-VirtualBox2 /localhost/nfd/strategy/best-route/%FD%05
+```
+
+At node 2:
+
+```sh
+$ nfdc face create udp://192.168.56.255
+$ nfdc route add /ledger udp://192.168.56.255
+$ nfdc route add /ledger/randyking-VirtualBox udp://192.168.56.255
+$ nfdc strategy set /ledger /localhost/nfd/strategy/multicast/%FD%03
+$ nfdc strategy set /ledger/randyking-VirtualBox /localhost/nfd/strategy/best-route/%FD%05
+```
+
+If there are more nodes, you'll do same for each of their IP and routable prefix.
+
+
+##### Running the Client
+
 At this point, your node is up and running -- ready to serve and receive blocks!
 
 If you want this node to generate a new block and notify other nodes, you'll have to use Client process. This will generate a new block, attach it to local Tangle and notify other nodes about it.
@@ -111,28 +172,3 @@ If you want this node to generate a new block and notify other nodes, you'll hav
 $ cd ndn-ledger/ndn-js/app
 $ node client.js NOTIF
 ```
-##### Configuring NFDs
-
-Below we give an example of how to configure NFDs at the nodes. Assume that you have two nodes with NFDs running and node1 and node2 are their hostnames and 192.168.56.101 and 192.168.56.102 are their IPs respectively.
-
-At node1:
-
-```sh
-$ nfdc face create udp://192.168.56.102
-$ nfdc route add /ledger udp://192.168.56.102
-$ nfdc route add /ledger/node2 udp://192.168.56.102
-$ nfdc strategy set /ledger /localhost/nfd/strategy/multicast/%FD%03
-$ nfdc strategy set /ledger/node2 /localhost/nfd/strategy/best-route/%FD%05
-```
-
-At node 2:
-
-```sh
-$ nfdc face create udp://192.168.56.101
-$ nfdc route add /ledger udp://192.168.56.101
-$ nfdc route add /ledger/node1 udp://192.168.56.101
-$ nfdc strategy set /ledger /localhost/nfd/strategy/multicast/%FD%03
-$ nfdc strategy set /ledger/node1 /localhost/nfd/strategy/best-route/%FD%05
-```
-
-If there are more nodes, you'll do same for each of their IP and routable prefix.
