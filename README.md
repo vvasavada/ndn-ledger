@@ -185,17 +185,6 @@ $ ./nfd-configure udp://192.168.56.101 /node1
 
 If there are more nodes, you'll do same for each of their IP and routable prefix.
 
-
-##### Running the Client
-
-At this point, your node is up and running -- ready to serve and receive blocks!
-
-If you want this node to generate a new block and notify other nodes, you'll have to use Client process. This will generate a new block, attach it to local Tangle and notify other nodes about it.
-
-```sh
-$ cd ndn-ledger/ndn-js/app
-$ node client.js NOTIF
-```
 ### Visualizing Results
 
 To visualize tangle and generate result table, issue the following command
